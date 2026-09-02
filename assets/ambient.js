@@ -32,13 +32,32 @@
   var SRC   = new URL(tag.getAttribute('data-src'), document.baseURI).href;
   var TITLE = tag.getAttribute('data-title') || 'Ambient';
   var K_ON  = 'ambient:on';      // "1" / "0"
-  var K_POS = 'ambient:pos';     // seconds into the track
-  var K_AT  = 'ambient:at';      // epoch ms of the last position write
-  var START_AT = 88;             // 1:28 -- where the track is asked to open
+  var K_IN  = 'ambient:entered'; // session only: has a project been opened yet
+  var START_AT = 0;              // seconds -- where the track opens
 
   function get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
-  function wanted(){ return get(K_ON) !== '0'; }
+  function sget(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+  function sset(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+
+  /* The lobby opens in silence. Music is armed by walking into a project, and
+     from then on it follows you anywhere -- including back to the lobby -- for
+     the rest of the session. */
+  function isProject(path){
+    var p = String(path).replace(/index\.html$/, '');
+    return p !== '/' && p !== '';
+  }
+  function entered(){ return sget(K_IN) === '1'; }
+  function wanted(){ return entered() && get(K_ON) !== '0'; }
+
+  /* Returns true the first time a project is opened, so the caller knows to
+     drop the needle at the top of the track. `path` lets the click that STARTS
+     a transition arm the music, rather than the arrival that ends it. */
+  function enter(path){
+    if (!isProject(path || location.pathname) || entered()) return false;
+    sset(K_IN, '1');
+    return true;
+  }
 
   /* ---------------------------------------------------------------- player */
 
@@ -47,21 +66,14 @@
   audio.preload = 'auto';
   audio.volume = 0.45;
 
-  // Open at START_AT. If a previous page left a position behind, pick that up
-  // instead -- plus the time spent loading this one -- so moving between pages
-  // is continuous rather than jumping back to 1:28 on every navigation.
+  /* Always open at START_AT. Moving between pages does not reload the
+     document -- render() swaps the body in place -- so this audio element
+     survives internal navigation and keeps playing without needing to
+     remember a position. Only a genuine load lands here, and a genuine load
+     should start at the top. */
   audio.addEventListener('loadedmetadata', function(){
-    var pos = parseFloat(get(K_POS) || '0');
-    var at  = parseFloat(get(K_AT)  || '0');
-    if (!isFinite(pos) || pos <= 0) {
-      pos = START_AT;                       // nothing stored: start at 1:28
-    } else if (at) {
-      pos += Math.min((Date.now() - at) / 1000, 30);
-    }
-    if (audio.duration) {
-      if (pos >= audio.duration) pos = pos % audio.duration;
-      if (pos >= audio.duration) pos = 0;   // START_AT past the end of a short file
-    }
+    var pos = START_AT;
+    if (audio.duration && pos >= audio.duration) pos = 0;
     try { audio.currentTime = pos; } catch(e){}
   });
 
@@ -110,15 +122,24 @@
     });
   }
 
+  /* Called on load and after every in-place navigation. */
+  function consider(path){
+    var target = path || location.pathname;
+    if (isProject(target)) {
+      // Only the FIRST entry drops the needle back to the top; later ones
+      // pick the track up wherever it is.
+      if (enter(target)) { try { audio.currentTime = START_AT; } catch(e){} }
+      // Heading into a project always means sound, even if it was muted
+      // earlier or the session was already armed and has since gone quiet.
+      if (!audible()) { set(K_ON, '1'); disarm(); start(); }
+    }
+    if (typeof btn !== 'undefined' && btn) paint();
+  }
+
   // Try the moment the script runs, before the page has even finished parsing.
+  consider();
   if (wanted()) start();
 
-  function remember(){
-    if (!audio.paused) { set(K_POS, String(audio.currentTime)); set(K_AT, String(Date.now())); }
-  }
-  setInterval(remember, 4000);
-  window.addEventListener('pagehide', remember);
-  document.addEventListener('visibilitychange', function(){ if (document.hidden) remember(); });
 
   /* --------------------------------------------------------------- control */
 
@@ -175,7 +196,15 @@
   btn.addEventListener('click', function(e){
     e.stopPropagation();
     if (audible()) { audio.pause(); set(K_ON,'0'); }
-    else { set(K_ON,'1'); disarm(); start(); }
+    else {
+      /* Asking for sound by hand counts as entering: it arms the session the
+         same way walking into a project does, and starts at the top. */
+      if (!entered()) {
+        sset(K_IN, '1');
+        try { audio.currentTime = START_AT; } catch(e2){}
+      }
+      set(K_ON,'1'); disarm(); start();
+    }
   });
 
   /* ----------------------------------------------------------------- fade */
@@ -246,6 +275,8 @@
     var target = url.hash && document.querySelector(url.hash);
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
+
+    consider();   // walking into a project is what starts the music
   }
 
   /* Fade out and fetch at the same time, so the wait costs no extra time: by
@@ -268,8 +299,19 @@
   window.__ambientNav = function(href){
     var u; try { u = new URL(href, document.baseURI); } catch(e){ location.href = href; return; }
     if (u.origin !== location.origin) { location.href = u.href; return; }
+    consider(u.pathname);
     go(u, true);
   };
+
+  /* Capture phase, so this runs BEFORE any page handler that swallows the
+     click to play a transition of its own. Starting the track inside the
+     gesture is also what keeps it clear of the autoplay policy. */
+  document.addEventListener('click', function(e){
+    if (e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var url = internal(e.target.closest && e.target.closest('a[href]'));
+    if (url) consider(url.pathname);
+  }, true);
 
   document.addEventListener('click', function(e){
     if (e.defaultPrevented || e.button !== 0) return;
