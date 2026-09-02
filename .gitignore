@@ -1,0 +1,8 @@
+# Camera originals: kept on disk, kept out of the repo.
+# 93 MB of HEIC/MOV vs 3.4 MB of published JPG/GIF -- GitHub Pages only needs
+# the published files. Re-derive them any time with 0/tools/prep.sh.
+*.HEIC
+*.heic
+*.MOV
+*.mov
+.DS_Store
