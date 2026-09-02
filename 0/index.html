@@ -216,6 +216,66 @@ footer{max-width:var(--wrap);margin:0 auto;padding:52px 34px 90px;text-align:cen
   .nav-in{padding:13px 20px}
   .why{padding-top:32px}
 }
+
+/* ---------- print: a flat, static copy for PDF submission ------------------
+   On screen this page is a pinned, scroll-driven stage whose opacity, blur and
+   transforms are written as INLINE styles by the script — so every rule that
+   has to undo them needs !important to win the cascade. White paper, dark ink,
+   one part per page, no animation to depend on. */
+.print-only{display:none}
+@media print{
+  @page{margin:14mm}
+  html,body{background:#fff !important;color:#111 !important}
+  body{font-size:11pt;line-height:1.55;font-weight:400 !important}
+  *{text-shadow:none !important;box-shadow:none !important;
+    animation:none !important;transition:none !important}
+  body::before,body::after{display:none !important}
+
+  /* screen-only furniture */
+  .nav,.hero-cue,.ambient,[data-ambient-veil]{display:none !important}
+
+  /* unpin everything the scroll engine set up */
+  .hero,body.scenes .hero,
+  .work,body.scenes .work,
+  .stage,body.scenes .stage,
+  .panel,body.scenes .panel,section{
+    position:static !important;display:block !important;
+    height:auto !important;max-width:none !important;overflow:visible !important;
+    opacity:1 !important;filter:none !important;transform:none !important;
+    visibility:visible !important;pointer-events:auto !important;
+  }
+  .hero{padding:0 0 8mm !important;text-align:left !important}
+  .work{padding:0 !important}
+  .panel,section{padding:0 !important;margin:0 0 8mm !important}
+  .melt{opacity:1 !important;filter:none !important;transform:none !important}
+
+  /* one part per sheet */
+  #part2,#part3{break-before:page;page-break-before:always}
+
+  h1{font-size:24pt !important;color:#111 !important;line-height:1.06 !important;
+     letter-spacing:-.01em !important;margin:0 !important}
+  h2{font-size:14pt !important;color:#111 !important;margin:0 0 3mm !important}
+  h3,.lede{font-size:10pt !important;color:#333 !important;margin:0 0 5mm !important;
+     max-width:none !important}
+  .sec-num{color:#777 !important;margin-bottom:2mm !important}
+
+  /* media at a size that actually fits a sheet */
+  .pair,.gallery,.print-frames{break-inside:avoid;page-break-inside:avoid}
+  .pair{display:grid !important;grid-template-columns:1fr 1fr !important;gap:4mm !important}
+  .gallery{display:grid !important;grid-template-columns:repeat(3,1fr) !important;
+    gap:4mm !important;max-width:none !important;margin:0 !important}
+  .pair img,.gallery img,.print-frames img{
+    width:100% !important;height:auto !important;max-height:none !important;
+    border:1px solid #bbb !important;background:none !important}
+
+  .print-only{display:block !important;margin-top:5mm}
+  .print-frames{display:grid !important;grid-template-columns:repeat(4,1fr);gap:3mm}
+  .print-cap{font-size:9pt !important;color:#555 !important;margin:0 0 2mm !important}
+
+  footer{color:#666 !important;text-align:left !important;
+    padding:6mm 0 0 !important;max-width:none !important;
+    font-size:8pt !important;letter-spacing:.12em !important}
+}
 </style>
 </head>
 <body>
@@ -277,6 +337,18 @@ footer{max-width:var(--wrap);margin:0 auto;padding:52px 34px 90px;text-align:cen
     <img src="media/part3/dolly-zoom.gif" alt="Dolly zoom: the orange holds a constant size while the kitchen behind it expands">
     <img src="media/part3/take-painting.gif" alt="Second dolly zoom take: a framed painting on a gallery wall">
     <img src="media/part3/take-desk.gif" alt="Third dolly zoom take: a laptop on a desk">
+  </div>
+
+  <!-- Paper only. An animated GIF prints as a single frame, so the PDF gets
+       the progression as stills instead. -->
+  <div class="print-only">
+    <p class="print-cap">Dolly zoom, frames 1 · 3 · 6 · 8 — camera walking back, zoom compensating.</p>
+    <div class="print-frames">
+      <img src="media/part3/frame-01.jpg" alt="Dolly zoom still 1, camera nearest">
+      <img src="media/part3/frame-03.jpg" alt="Dolly zoom still 3">
+      <img src="media/part3/frame-06.jpg" alt="Dolly zoom still 6">
+      <img src="media/part3/frame-08.jpg" alt="Dolly zoom still 8, camera farthest">
+    </div>
   </div>
 </section>
 

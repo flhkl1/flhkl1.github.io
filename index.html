@@ -1,16 +1,464 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Portfolio</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jack Yang — CS 180</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#060a1a;--panel:rgba(9,17,42,.74);
+  --line:rgba(120,160,220,.20);--cream:#ffffff;
+  --muted:#ffffff;--dim:#ffffff;--gold:#ffffff;
+  --display:"Michroma","Futura",sans-serif;
+  --body:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+}
+/* crossfade between the portfolio and each project page */
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){
+  animation-duration:.5s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.01s}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--cream);
+  font-family:var(--body);font-weight:300;font-size:17px;line-height:1.75;
+  min-height:100vh;-webkit-font-smoothing:antialiased;}
+/* The painting is an <img> rather than a CSS background so the script can read
+   its real cover geometry and drop the hotspot exactly on the figure. */
+.stage{position:fixed;inset:0;z-index:-2;overflow:hidden}
+.stage img{width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,10,26,.52) 0%,rgba(6,10,26,.70) 55%,rgba(6,10,26,.82) 100%);}
+a{text-decoration:none;color:inherit}
+
+/* The transition overlay is built and styled entirely in JS: it has to live on
+   <html> and carry inline styles, because ambient.js swaps <body> and drops the
+   page's <style> tags mid-flight. See the script at the end of the document. */
+
+/* --- the terrace doors: the way out of the room and into Project 0 ---------
+   This used to be a circle drawn over the figure on the sofa, which fitted
+   nothing in the painting. It is now the doorway itself: traced once in the
+   backdrop's natural pixels and lit from the edge, so the room stays exactly
+   as painted and the door is simply the thing that glows. The anchor covers
+   the whole window but takes no pointer -- only the doorway does. */
+.avatar{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  opacity:0;transition:opacity .8s ease;
+}
+.avatar.placed{opacity:1}
+.avatar:focus-visible{outline:none}
+
+.door{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+/* The interior of the doorway is the click target: a rim on its own is a
+   miserable thing to hit. */
+.door .hit{fill:#fff;fill-opacity:0;pointer-events:fill;cursor:pointer}
+/* non-scaling-stroke (set on the path itself, since vector-effect does not
+   inherit) holds the line to the same weight on screen however hard the
+   backdrop is cropped. */
+.door .glow,.door .rim{
+  fill:none;stroke-linejoin:round;stroke-linecap:round;
+  transition:stroke-opacity .4s ease,stroke-width .4s ease;
+}
+.door .glow{stroke:#ffe9c4;stroke-width:7;stroke-opacity:.20;filter:url(#door-soft)}
+.door .rim {stroke:#ffffff;stroke-width:1.5;stroke-opacity:.55}
+.avatar:hover .glow,.avatar:focus-visible .glow{stroke-opacity:.58;stroke-width:11}
+.avatar:hover .rim, .avatar:focus-visible .rim {stroke-opacity:1;stroke-width:2}
+
+/* The label hangs in the doorway itself, over the dark lower panels, so it
+   needs no plate -- just its own shadow. JS parks it; the transform centres it. */
+.avatar-label{
+  position:absolute;z-index:1;
+  font-family:var(--display);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+  color:#fff;white-space:nowrap;text-align:center;
+  text-shadow:0 2px 18px rgba(5,9,22,.95),0 0 40px rgba(5,9,22,.85);
+  opacity:0;transform:translate(-50%,-50%) translateY(8px);
+  transition:opacity .35s ease,transform .45s cubic-bezier(.22,.61,.36,1);
+  pointer-events:none;
+}
+.avatar:hover .avatar-label,.avatar:focus-visible .avatar-label{
+  opacity:1;transform:translate(-50%,-50%);
+}
+
+/* Breathe until it has been hovered once, so the way out is discoverable. */
+.avatar:not(.touched) .glow{animation:beacon 3.6s ease-in-out infinite}
+@keyframes beacon{
+  0%,100%{stroke-opacity:.16}
+  50%    {stroke-opacity:.44}
+}
+@media(prefers-reduced-motion:reduce){
+  .avatar:not(.touched) .glow{animation:none}
+  .avatar,.avatar-label,.door .glow,.door .rim{transition:none}
+}
+
+/* --- type laid into the scene ---------------------------------------------
+   The eyebrow sits on the free glass at the front of the coffee table; the
+   headline lies on the carpet, running parallel to the table's left end. Both
+   are placed by JS from coordinates in the backdrop's natural pixels and
+   sheared onto the plane of the surface they sit on, so they travel with the
+   crop. Sizes here are in NATURAL pixels -- the transform applies the cover
+   scale on top. If the window is too tight to hold them, .scene comes off and
+   these rules stop applying, leaving the ordinary centred layout. */
+body.scene .eyebrow,
+body.scene .stamp,
+body.scene h1{
+  position:fixed;left:0;top:0;margin:0;z-index:1;
+  transform-origin:0 0;white-space:nowrap;text-align:left;
+  opacity:0;transition:opacity .8s ease;
+}
+body.scene .eyebrow.laid,body.scene .stamp.laid,body.scene h1.laid{opacity:1}
+body.scene .eyebrow,body.scene .stamp{font-size:12.5px;letter-spacing:.34em;
+  text-shadow:0 1px 10px rgba(5,9,22,.92)}
+body.scene h1{font-size:38px;line-height:1.34;letter-spacing:.04em;
+  text-shadow:0 2px 18px rgba(5,9,22,.95),0 0 60px rgba(5,9,22,.88)}
+/* Both children of .wrap are lifted out of the flow above, so the box would
+   otherwise collapse and drag the footer up into the middle of the room. */
+body.scene .wrap{padding:0;height:0}
+body.scene footer{position:fixed;left:0;right:0;bottom:24px;padding:0 34px}
+
+.wrap{max-width:1000px;margin:0 auto;padding:22vh 34px 90px}
+.eyebrow,.stamp{font-family:var(--display);font-size:11px;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:34px;text-align:center}
+h1{font-family:var(--display);font-weight:400;text-align:center;
+  font-size:clamp(1.5rem,4.2vw,3rem);line-height:1.34;letter-spacing:.04em;
+  margin:0 0 26px;text-transform:uppercase;
+  text-shadow:0 0 46px rgba(6,10,26,.95),0 2px 10px rgba(6,10,26,.9);}
+h1 span{color:var(--gold);display:block}
+h1 .course{color:inherit;text-decoration:none;display:inline-block;
+  transition:opacity .22s ease,text-shadow .22s ease}
+h1 .course:hover,h1 .course:focus-visible{
+  opacity:.82;text-shadow:0 0 46px rgba(6,10,26,.95),0 0 26px rgba(255,255,255,.35)}
+h1 .course:focus-visible{outline:1px solid rgba(255,255,255,.6);outline-offset:8px}
+.tagline{text-align:center;color:var(--muted);max-width:56ch;margin:0 auto 76px;
+  text-shadow:0 1px 14px rgba(6,10,26,.9)}
+
+footer{text-align:center;font-family:var(--display);font-size:9.5px;
+  letter-spacing:.24em;color:var(--dim);text-transform:uppercase;
+  padding:0 34px 70px;line-height:2.4}
+@media(max-width:640px){.wrap{padding:13vh 20px 60px}}
+
+/* ---------- print ----------
+   The type here is laid onto the painting with fixed positioning and matrix
+   transforms set inline by JS; on paper that collapses into overlapping
+   fragments, so print gets a plain stacked version instead. */
+@media print{
+  @page{margin:14mm}
+  html,body{background:#fff !important;color:#111 !important}
+  *{text-shadow:none !important;box-shadow:none !important;
+    animation:none !important;transition:none !important}
+  body::before,body::after{display:none !important}
+  .stage,.avatar,.ambient,[data-ambient-veil]{display:none !important}
+  .eyebrow,.stamp,h1,body.scene .eyebrow,body.scene .stamp,body.scene h1{
+    position:static !important;transform:none !important;opacity:1 !important;
+    color:#111 !important;text-align:left !important;white-space:normal !important;
+    font-size:12pt !important;letter-spacing:.2em !important;margin:0 0 3mm !important}
+  h1{font-size:22pt !important;letter-spacing:.02em !important;margin:0 0 6mm !important}
+  .wrap,body.scene .wrap{position:static !important;height:auto !important;
+    padding:0 !important;max-width:none !important}
+  footer,body.scene footer{position:static !important;color:#666 !important;
+    text-align:left !important;padding:8mm 0 0 !important;font-size:8pt !important}
+}
+</style>
 </head>
 <body>
-    <h1>Welcome to My CS180 Portfolio!</h1>
-    <a href="./1/index.html">Project 1</a>
+
+<div class="stage"><img id="bg" src="assets/normal-bg.jpg" alt="" aria-hidden="true"></div>
+
+<div class="transition" id="transition" aria-hidden="true">
+  <video id="transition-video" muted playsinline preload="auto"
+         src="assets/transition.mp4"></video>
+</div>
+
+<a class="avatar" id="avatar" href="./0/index.html"
+   aria-label="Enter Project 0 — out through the terrace doors">
+  <svg class="door" aria-hidden="true">
+    <defs>
+      <!-- generous region: the blur has to spill well outside the doorway -->
+      <filter id="door-soft" x="-.25" y="-.25" width="1.5" height="1.5">
+        <feGaussianBlur id="door-blur" stdDeviation="9"/>
+      </filter>
+      <path id="door-path" vector-effect="non-scaling-stroke" d="M1298 458 L1297 330 L1297 250 L1298 180 C1299 150 1301 120 1305 96 C1309 66 1316 40 1324 20 L1333 -46 L1666 -46 L1660 0 L1652 100 L1644 260 L1640 400 L1639 447 L1560 452 L1450 455 L1370 457 Z"/>
+    </defs>
+    <!-- one path, three passes: the pointer target, the halo, the rim.
+         #door-g carries the crop transform, so the d above is in the
+         painting's own pixels. -->
+    <g id="door-g">
+      <use class="hit"  href="#door-path"/>
+      <use class="glow" href="#door-path"/>
+      <use class="rim"  href="#door-path"/>
+    </g>
+  </svg>
+  <span class="avatar-label">Project 0 &nbsp;→</span>
+</a>
+
+<div class="wrap">
+  <div class="eyebrow">Jack Yang</div>
+  <div class="stamp">Fall 2026</div>
+  <h1><a class="course" href="https://cal-cs180.github.io/fa26/"
+         target="_blank" rel="noopener noreferrer">CS 180<br><span>COMPUTERVISION</span></a></h1>
+</div>
+
+
+<script>
+/* Light the terrace doors, and keep them in frame.
+   Everything below is in NATURAL pixels of assets/normal-bg.jpg (1690x940).
+   FIG is the figure on the sofa -- still what the crop is composed around --
+   and DOOR is the doorway traced in the markup above. The image is drawn with
+   object-fit:cover, so we redo that same maths here to find where those pixels
+   actually land on screen. */
+(function(){
+  var FIG  = { cx:615, cy:400 };
+  var DOOR = { x1:1297, x2:1660, cx:1478, cy:400 };
+  var GLOW = 9;                       // halo radius in SCREEN px, any crop
+  var img   = document.getElementById('bg');
+  var hot   = document.getElementById('avatar');
+  var doorG = document.getElementById('door-g');
+  var blur  = document.getElementById('door-blur');
+  var label = hot && hot.querySelector('.avatar-label');
+  if(!img || !hot) return;
+
+  function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+  function sub(a,b){ return [a[0]-b[0], a[1]-b[1]]; }
+  function unit(v){ var m=Math.hypot(v[0],v[1]); return [v[0]/m, v[1]/m]; }
+  function neg(v){ return [-v[0], -v[1]]; }
+
+  /* The coffee table, measured off the painting in the same natural pixels.
+     Its top reads as a parallelogram, so its two edge directions ARE the axes
+     of the ground plane -- and parallel lines share a vanishing point whatever
+     their height, so the carpet borrows those same axes unchanged. */
+  var T_W=[612,565], T_S=[935,622], T_N=[739,496];
+  var LONG  = sub(T_S,T_W);   // +10.0 deg -- the long front edge
+  var SHORT = sub(T_N,T_W);   // -28.5 deg -- the LEFT END of the table
+
+  // A point on the tabletop: a runs along the long edge, b towards the back.
+  function on(a,b){
+    return [T_W[0]+a*LONG[0]+b*SHORT[0], T_W[1]+a*LONG[1]+b*SHORT[1]];
+  }
+
+  /* Each entry is sheared onto its surface with a 2D matrix whose first column
+     is the direction the baseline runs and whose second is the direction the
+     glyphs grow downward. */
+  var LAID = [
+    // Front band of the glass, clear of the tray and the teapot.
+    { sel:'.eyebrow', at:on(0.08,0.20), u:unit(LONG),  v:neg(unit(SHORT)) },
+    /* The year sits along the table's RIGHT end, centred on that edge and
+       running with it, so the glyph tops face the top left of the room. */
+    { sel:'.stamp',   u:unit(SHORT), v:unit(LONG),
+      along:{ base:T_S, len:Math.hypot(SHORT[0],SHORT[1]) } },
+    /* The headline lies on the open carpet in front of the table, running
+       with the long front edge — square to the way it used to read. */
+    { sel:'h1',       at:[430,660],     u:unit(LONG),  v:neg(unit(SHORT)) }
+  ];
+  LAID.forEach(function(f){ f.el = document.querySelector(f.sel); });
+
+  function place(){
+    var iw = img.naturalWidth, ih = img.naturalHeight;
+    if(!iw || !ih) return;
+    var cw = window.innerWidth, ch = window.innerHeight;
+    var scale = Math.max(cw/iw, ch/ih);            // object-fit: cover
+    var dw = iw*scale, dh = ih*scale;
+
+    /* Crop around the figure rather than the middle of the painting, so a
+       narrow window trims the room instead of trimming him out of frame.
+       Clamped so no edge of the image is ever pulled inside the viewport. */
+    var ox = clamp(cw/2 - FIG.cx*scale, cw - dw, 0);
+    var oy = clamp(ch/2 - FIG.cy*scale, ch - dh, 0);
+
+    /* The doorway is the only way into Project 0, so it outranks the
+       composition: if a narrow window would push it off the right edge, drag
+       the painting left by exactly the overhang. On anything wide enough to
+       hold the door already -- most screens -- this changes nothing. */
+    var span = (DOOR.x2 - DOOR.x1) * scale;         // the door's width on screen
+    var pad  = Math.min(16, Math.max(0, (cw - span) / 2));
+    var over = ox + DOOR.x2*scale - (cw - pad);
+    if(over > 0) ox = clamp(ox - over, cw - dw, 0);
+
+    img.style.objectPosition = ox + 'px ' + oy + 'px';
+
+    /* One transform puts the traced doorway exactly over the painted one. */
+    if(doorG) doorG.setAttribute('transform',
+      'translate(' + ox + ',' + oy + ') scale(' + scale + ')');
+    /* The stroke is held in screen px by vector-effect, but the blur is not --
+       it lives in user space, so undo the crop scale to keep the halo soft by
+       the same amount at every size. */
+    if(blur) blur.setAttribute('stdDeviation', (GLOW / scale).toFixed(3));
+    if(label){
+      label.style.left = (ox + DOOR.cx*scale) + 'px';
+      label.style.top  = (oy + DOOR.cy*scale) + 'px';
+    }
+    hot.classList.add('placed');
+
+    // Lay the type onto the table and the carpet, using the crop just solved.
+    var scene = cw >= 900 && ch >= 560;
+    document.body.classList.toggle('scene', scene);
+    LAID.forEach(function(f){
+      if(!f.el) return;
+      if(!scene){ f.el.style.transform=''; f.el.classList.remove('laid'); return; }
+      /* An entry pinned to an edge is centred along it, measured rather than
+         guessed, so it stays centred when the webfont finally lands. */
+      var at = f.at;
+      if(f.along){
+        var slack = Math.max(0, (f.along.len - f.el.offsetWidth) / 2);
+        at = [f.along.base[0] + f.u[0]*slack, f.along.base[1] + f.u[1]*slack];
+      }
+      f.el.style.transform =
+        'matrix(' + (f.u[0]*scale) + ',' + (f.u[1]*scale) + ',' +
+                    (f.v[0]*scale) + ',' + (f.v[1]*scale) + ',' +
+                    (ox + at[0]*scale) + ',' + (oy + at[1]*scale) + ')';
+    });
+
+    /* A hard crop can push a surface past the edge of the window. Rather than
+       clip the type, hand the page back to the centred layout. */
+    if(scene){
+      var fits = LAID.every(function(f){
+        if(!f.el) return true;
+        var b = f.el.getBoundingClientRect();
+        return b.left > -4 && b.top > -4 && b.right < cw + 4 && b.bottom < ch + 4;
+      });
+      document.body.classList.toggle('scene', fits);
+      LAID.forEach(function(f){
+        if(!f.el) return;
+        if(fits) f.el.classList.add('laid');
+        else { f.el.style.transform=''; f.el.classList.remove('laid'); }
+      });
+    }
+  }
+
+  if(img.complete) place(); else img.addEventListener('load', place);
+  addEventListener('resize', place);
+  // Michroma changes the measured box, so re-solve the fit once it lands.
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+  hot.addEventListener('pointerenter', function(){ hot.classList.add('touched'); }, {once:true});
+})();
+</script>
+
+<script>
+/* Clicking the avatar plays transition.mp4 (living room -> out through the
+   doors -> the statue) and lands on Project 0, whose background is the frame
+   the shot ends on. Three things have to be true for that cut to be invisible:
+
+   1. NO VEIL. Nothing fades to black. The video's final frame stays on screen
+      until the destination is genuinely ready to be seen.
+   2. THE OVERLAY MUST SURVIVE THE SWAP. ambient.js replaces <body> and removes
+      the page's <style> tags, so the overlay is parented to <html> and styled
+      inline -- otherwise it vanishes, or loses its styling, at the worst moment.
+   3. THE DESTINATION MUST BE PAINTED FIRST. Project 0's background lives at
+      0/assets/background.jpg, which this page never loads. Swapping without it
+      shows the bare --night colour -- which is the "black out". So we warm that
+      image up, start the page swap slightly BEFORE the video ends, and only
+      lift the overlay once the image has decoded and a frame has been painted. */
+(function(){
+  var HREF    = './0/index.html';
+  var DEST_BG = './0/assets/background.jpg';
+  var LEAD    = 0.9;    // seconds before the end to start swapping underneath
+  var FADE    = 260;    // ms to lift the last frame once the page is ready
+
+  var hot   = document.getElementById('avatar');
+  var wrap  = document.getElementById('transition');
+  var video = document.getElementById('transition-video');
+  if(!hot || !wrap || !video) return;
+
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  function css(el, o){ for(var k in o) el.style[k] = o[k]; }
+
+  // Out of <body>, so the page swap cannot destroy it.
+  document.documentElement.appendChild(wrap);
+  css(wrap, {position:'fixed', top:'0', left:'0', width:'100%', height:'100%',
+             zIndex:'2147483647', background:'#000', opacity:'0',
+             visibility:'hidden', pointerEvents:'none', transition:'none'});
+  css(video, {width:'100%', height:'100%', objectFit:'cover', display:'block'});
+
+  var skip = document.createElement('div');
+  skip.textContent = 'Click to skip';
+  css(skip, {position:'absolute', right:'22px', bottom:'20px', padding:'8px 13px',
+             font:'9px/1 Michroma, Futura, sans-serif', letterSpacing:'.22em',
+             textTransform:'uppercase', color:'rgba(255,255,255,.72)',
+             background:'rgba(0,0,0,.42)', border:'1px solid rgba(255,255,255,.28)',
+             borderRadius:'2px', opacity:'0', transition:'opacity .4s ease .9s'});
+  wrap.appendChild(skip);
+
+  // Warm the destination background as soon as the cursor arrives, so it is
+  // decoded long before the shot ends.
+  var bg = new Image();
+  function warm(){ if(!bg.src) bg.src = DEST_BG; }
+  hot.addEventListener('pointerenter', warm);
+  hot.addEventListener('focus', warm);
+
+  var swapped = false, revealed = false;
+
+  function swap(){
+    if(swapped) return;
+    swapped = true;
+    if (typeof window.__ambientNav === 'function') window.__ambientNav(HREF);
+    else { location.href = HREF; }          // hard load: overlay goes with it
+  }
+
+  function reveal(){
+    if(revealed) return;
+    revealed = true;
+    swap();
+    var lift = function(){
+      var fired = false;
+      var run = function(){
+        if (fired) return;
+        fired = true;
+        wrap.style.transition = 'opacity ' + FADE + 'ms linear';
+        void wrap.offsetHeight;                       // commit before animating
+        wrap.style.opacity = '0';
+        setTimeout(function(){
+          if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+        }, FADE + 80);
+      };
+      // Ideally wait two frames so the incoming page has actually painted, but
+      // rAF is throttled to a crawl in a background tab (and barely runs at all
+      // headless), so never let it be the only thing that can finish this.
+      requestAnimationFrame(function(){ requestAnimationFrame(run); });
+      setTimeout(run, 140);
+    };
+    if (bg.complete && bg.naturalWidth) lift();
+    else { bg.onload = lift; bg.onerror = lift; setTimeout(lift, 1500); }
+  }
+
+  hot.addEventListener('click', function(e){
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (reduce) return;                     // plain link handles it
+    e.preventDefault();
+    e.stopPropagation();                    // don't let ambient.js navigate early
+    warm();
+
+    css(wrap, {transition:'none', opacity:'1', visibility:'visible',
+               pointerEvents:'auto', cursor:'pointer'});
+    skip.style.opacity = '1';
+
+    var playing = video.play();
+    if (playing && playing.catch) playing.catch(function(){ reveal(); });
+
+    // Drive everything off timeupdate. A video that has reached its last frame
+    // does not reliably fire 'ended' -- it can simply sit there with
+    // ended === false and paused === false -- so the end is detected from the
+    // clock instead, and 'ended' is kept only as an extra trigger.
+    video.addEventListener('timeupdate', function(){
+      if (!video.duration) return;
+      var left = video.duration - video.currentTime;
+      if (left <= LEAD) swap();             // render Project 0 underneath
+      if (left <= 0.06) reveal();           // last frame is up: hand over
+    });
+    video.addEventListener('ended', reveal, {once:true});
+    // Backstop, in case timeupdate stops arriving too.
+    setTimeout(reveal, (video.duration ? video.duration * 1000 : 5100) + 1500);
+  });
+
+  wrap.addEventListener('click', reveal);
+  addEventListener('keydown', function(e){
+    if (wrap.style.visibility === 'visible' && (e.key === 'Escape' || e.key === 'Enter')) reveal();
+  });
+})();
+</script>
+
+<script src="assets/ambient.js"
+        data-src="assets/audio/underground.mp3"
+        data-title="Nick Curly - Underground"></script>
 </body>
 </html>
