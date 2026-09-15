@@ -197,6 +197,25 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   <span class="avatar-label">Project 0 &nbsp;→</span>
 </a>
 
+<!-- The bird picture on the wall: the way into Project 1. Same treatment as the
+     doors -- traced in the painting's natural pixels, lit from the edge -- and it
+     borrows the doors' blur filter, so the two halos always match. A plain link,
+     so ambient.js carries it with its usual fade. -->
+<a class="avatar" id="picture" href="./1/"
+   aria-label="Enter Project 1 — the picture on the wall">
+  <svg class="door" aria-hidden="true">
+    <defs>
+      <path id="picture-path" vector-effect="non-scaling-stroke" d="M1050 79 L1188 72 L1176 279 L1045 276 Z"/>
+    </defs>
+    <g id="picture-g">
+      <use class="hit"  href="#picture-path"/>
+      <use class="glow" href="#picture-path"/>
+      <use class="rim"  href="#picture-path"/>
+    </g>
+  </svg>
+  <span class="avatar-label">Project 1 &nbsp;→</span>
+</a>
+
 <div class="wrap">
   <div class="eyebrow"><a class="ig" href="https://www.instagram.com/jackyang03/"
          target="_blank" rel="noopener noreferrer">Jack Yang</a></div>
@@ -222,6 +241,10 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   var doorG = document.getElementById('door-g');
   var blur  = document.getElementById('door-blur');
   var label = hot && hot.querySelector('.avatar-label');
+  var PIC   = { cx:1117, labelY:302 };    // the bird picture, Project 1
+  var pic      = document.getElementById('picture');
+  var picG     = document.getElementById('picture-g');
+  var picLabel = pic && pic.querySelector('.avatar-label');
   if(!img || !hot) return;
 
   function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
@@ -295,6 +318,18 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
     }
     hot.classList.add('placed');
 
+    /* The picture rides the same crop. Its label hangs on the wallpaper just
+       under the frame rather than over the drawing itself. */
+    if(pic){
+      if(picG) picG.setAttribute('transform',
+        'translate(' + ox + ',' + oy + ') scale(' + scale + ')');
+      if(picLabel){
+        picLabel.style.left = (ox + PIC.cx*scale) + 'px';
+        picLabel.style.top  = (oy + PIC.labelY*scale) + 'px';
+      }
+      pic.classList.add('placed');
+    }
+
     // Lay the type onto the table and the carpet, using the crop just solved.
     var scene = cw >= 900 && ch >= 560;
     document.body.classList.toggle('scene', scene);
@@ -336,6 +371,7 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   // Michroma changes the measured box, so re-solve the fit once it lands.
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(place);
   hot.addEventListener('pointerenter', function(){ hot.classList.add('touched'); }, {once:true});
+  if(pic) pic.addEventListener('pointerenter', function(){ pic.classList.add('touched'); }, {once:true});
 })();
 </script>
 

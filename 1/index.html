@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project 1: Colorizing the Prokudin-Gorskii Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Inter:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#060a1a;
+  --deep:#0b1530;
+  --line:rgba(120,160,220,.20);
+  --line-lit:rgba(255,210,63,.42);
+  --cream:#ffffff;
+  --muted:#c9d4e4;
+  --gold:#ffd23f;
+  --r:#ff6b6b;--g:#5fd38d;--b:#6aa8ff;
+  --wrap:1240px;
+  --display:"Michroma","Futura",sans-serif;
+  --body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+/* portfolio <-> project navigation crossfades instead of cutting */
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){
+  animation-duration:.5s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.01s}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{
+  margin:0;color:var(--cream);
+  background:
+    radial-gradient(1200px 700px at 12% -8%,rgba(106,168,255,.13),transparent 60%),
+    radial-gradient(900px 600px at 95% 18%,rgba(255,107,107,.08),transparent 60%),
+    radial-gradient(900px 700px at 50% 110%,rgba(95,211,141,.07),transparent 60%),
+    var(--night);
+  background-attachment:fixed;
+  font-family:var(--body);font-weight:400;font-size:17px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block}
+a{color:var(--gold);text-decoration:none}
+a:hover{color:#fff}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:50;
+  background:rgba(6,10,26,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);}
+.nav-in{max-width:var(--wrap);margin:0 auto;padding:15px 34px;
+  display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
+.nav a{font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#fff}
+.nav a:hover{color:var(--gold)}
+.nav-links{display:flex;gap:22px;margin-left:auto;flex-wrap:wrap}
+
+/* ---------- hero ---------- */
+.hero{max-width:var(--wrap);margin:0 auto;padding:110px 34px 40px;text-align:center}
+.eyebrow{font-family:var(--display);font-size:11px;letter-spacing:.42em;
+  text-transform:uppercase;color:#fff;margin-bottom:30px}
+h1{font-family:var(--body);font-weight:800;
+  font-size:clamp(2.4rem,11vw,8.5rem);line-height:.94;
+  letter-spacing:-.03em;margin:0;text-transform:uppercase;color:#fff}
+h1 .rgb{display:block;font-size:.34em;letter-spacing:.02em;margin-top:.5em;font-weight:700}
+h1 .rgb i{font-style:normal}
+h1 .rgb i:nth-child(1){color:var(--r)}
+h1 .rgb i:nth-child(2){color:var(--g)}
+h1 .rgb i:nth-child(3){color:var(--b)}
+.hero p{font-size:1.08rem;color:var(--muted);max-width:64ch;margin:34px auto 0}
+
+/* ---------- sections ---------- */
+section{max-width:var(--wrap);margin:0 auto;padding:90px 46px 0}
+.sec-num{font-family:var(--display);font-size:10px;letter-spacing:.3em;color:var(--gold);
+  display:block;margin-bottom:18px}
+h2{font-family:var(--display);font-weight:400;
+  font-size:clamp(1.05rem,2.1vw,1.62rem);line-height:1.45;letter-spacing:.03em;
+  margin:0 0 22px;text-transform:uppercase}
+h3{font-family:var(--display);font-weight:400;font-size:.8rem;letter-spacing:.14em;
+  text-transform:uppercase;margin:56px 0 16px;color:#fff}
+p{margin:0 0 17px}
+.prose{max-width:78ch;color:#d9e2ef}
+.prose strong{color:#fff;font-weight:600}
+code,.eq{font-family:var(--mono);font-size:.86em;color:var(--gold);
+  background:rgba(255,210,63,.10);padding:1px 6px;border-radius:3px}
+.eq-block{font-family:var(--mono);font-size:.95rem;color:#fff;text-align:center;
+  background:rgba(11,21,48,.7);border:1px solid var(--line);border-radius:4px;
+  padding:18px 20px;margin:24px 0;overflow-x:auto;white-space:nowrap}
+pre{font-family:var(--mono);font-size:.84rem;line-height:1.6;color:#e7edf7;
+  background:rgba(11,21,48,.8);border:1px solid var(--line);border-radius:4px;
+  padding:18px 22px;margin:22px 0;overflow-x:auto;max-width:78ch}
+pre .c{color:#7f93b3}
+.divider{height:1px;margin:0 auto;max-width:calc(var(--wrap) - 92px);
+  background:linear-gradient(90deg,transparent,var(--line-lit) 50%,transparent)}
+
+/* ---------- figures ---------- */
+figure{margin:0}
+figcaption{font-size:.84rem;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{font-family:var(--display);font-weight:400;font-size:.7rem;letter-spacing:.14em;
+  text-transform:uppercase;color:#fff;display:block;margin-bottom:3px}
+.off{font-family:var(--mono);font-size:.8rem;white-space:nowrap}
+.off .G{color:var(--g)} .off .R{color:var(--r)}
+.frame{border:1px solid var(--line);border-radius:3px;background:var(--deep);overflow:hidden}
+.frame img{width:100%;height:auto}
+.zoomable{cursor:zoom-in}
+
+.row{display:grid;gap:22px;align-items:start;margin:28px 0}
+.row.c2{grid-template-columns:repeat(2,1fr)}
+.row.c3{grid-template-columns:repeat(3,1fr)}
+.row.intro{grid-template-columns:minmax(0,.55fr) minmax(0,1.45fr)}
+@media(max-width:900px){.row.c3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.row.c2,.row.c3,.row.intro{grid-template-columns:1fr}}
+
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:26px 22px;margin:30px 0}
+.gallery .frame{aspect-ratio:8/7}
+.gallery .frame img{height:100%;object-fit:cover}
+
+/* ---------- before / after slider ---------- */
+.compare{position:relative;border:1px solid var(--line);border-radius:3px;overflow:hidden;
+  background:var(--deep);user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.compare img{width:100%;height:auto;pointer-events:none}
+.compare .top{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--pos,50%)) 0 0)}
+.compare .top img{height:100%;object-fit:cover}
+.compare .handle{position:absolute;top:0;bottom:0;left:var(--pos,50%);width:2px;margin-left:-1px;
+  background:#fff;box-shadow:0 0 12px rgba(0,0,0,.6);pointer-events:none}
+.compare .handle::after{content:"◂ ▸";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(6,10,26,.85);border:1px solid rgba(255,255,255,.7);border-radius:20px;
+  font-size:11px;padding:4px 9px;white-space:nowrap;color:#fff}
+.compare .tag{position:absolute;top:12px;font-family:var(--display);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;background:rgba(6,10,26,.8);padding:5px 9px;border-radius:2px;pointer-events:none}
+.compare .tag.l{left:12px} .compare .tag.r{right:12px}
+.compare input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+
+/* ---------- offsets table ---------- */
+.table-wrap{overflow-x:auto;margin:30px 0;border:1px solid var(--line);border-radius:4px;background:rgba(11,21,48,.55)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:620px}
+th,td{padding:10px 16px;text-align:left;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--display);font-weight:400;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+td.m{font-family:var(--mono);font-size:.85rem;white-space:nowrap}
+td .G{color:var(--g)} td .R{color:var(--r)}
+td .bad{color:var(--r);text-decoration:line-through;opacity:.85}
+.pill{font-family:var(--display);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;
+  border:1px solid var(--line-lit);color:var(--gold);padding:2px 7px;border-radius:10px;margin-left:8px;white-space:nowrap}
+
+.callout{border-left:2px solid var(--gold);background:rgba(255,210,63,.06);padding:16px 22px;margin:26px 0;max-width:78ch;color:#e6ecf5}
+.callout p:last-child{margin:0}
+
+/* ---------- lightbox ---------- */
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(3,6,16,.94);display:flex;
+  align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain}
+.lightbox[hidden]{display:none}
+
+footer{max-width:var(--wrap);margin:0 auto;padding:110px 34px 90px;text-align:center;
+  font-family:var(--display);font-size:9.5px;letter-spacing:.24em;
+  color:#fff;text-transform:uppercase;line-height:2.4}
+
+@media(max-width:640px){
+  section{padding:64px 20px 0}
+  .hero{padding:70px 20px 20px}
+  .nav-in{padding:13px 20px}
+  .nav-links{gap:14px;margin-left:0}
+}
+
+@media print{
+  @page{margin:14mm}
+  html,body{background:#fff !important;color:#111 !important}
+  .nav,.ambient,[data-ambient-veil],.lightbox{display:none !important}
+  .prose,figcaption,.hero p,h1,h2,h3,td,th{color:#111 !important}
+  .compare .top,.compare .handle,.compare input{display:none !important}
+  section{padding-top:30px}
+  figure,.row,.table-wrap{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="../">← Portfolio</a>
+    <div class="nav-links">
+      <a href="#single">01 Single-scale</a>
+      <a href="#pyramid">02 Pyramid</a>
+      <a href="#extra">03 My picks</a>
+      <a href="#failures">04 Failures</a>
+      <a href="#bells">05 Bells &amp; whistles</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">CS 180 · Project 1 · Jack Yang</div>
+</header>
+
+<!-- ============ INTRO ============ -->
+<section id="intro">
+  <span class="sec-num">00</span>
+  <h2>The problem</h2>
+  <div class="prose">
+    <p>
+      A scan is a grayscale image stacked into thirds, with B -> G -> R. When you cut it along thirds and stack them,
+      you get a color image but poorly blurred, since the camera and the plate moved slightly between exposures. The idea is to
+      execute some set of shifts (dy,dx) that puts green and red on blue.
+    </p>
+  </div>
+  <div class="row intro">
+    <figure>
+      <div class="frame zoomable"><img src="media/intro/plate.jpg" alt="The raw cathedral glass plate scan: three grayscale exposures stacked vertically" loading="lazy"></div>
+      <figcaption><b>Input</b>cathedral.jpg. B, G, R top to bottom.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/intro/naive.jpg" alt="The three cathedral channels stacked with no alignment, showing heavy color fringing" loading="lazy"></div>
+      <figcaption><b>No alignment</b>Just splitting into thirds and stacking, so every edge has red and green ghosts.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<!-- ============ 01 SINGLE SCALE ============ -->
+<section id="single">
+  <span class="sec-num">01</span>
+  <h2>Single-scale alignment</h2>
+  <div class="prose">
+    <p>
+      For the small JPEGs, (about 390 × 340 px per channel), we can brute force by searching
+      a window of (dy,dx) in [-15,15], trying every possible shift of green and red channels.
+      That yields 31*31 = 961 candidates for a full search. We take the argmin of (dy,dx) 
+      of the normalized cross correlation loss.
+    </p>
+  </div>
+  <div class="eq-block">NCC(a, b) = ⟨a − ā, b − b̄⟩ / (‖a − ā‖ · ‖b − b̄‖)</div>
+  <div class="prose">
+    <p>
+      We minimize <code>-NCC</code> so it acts like an L2 loss where lower is better. Two things
+      mattered a lot here.
+    </p>
+    <p>
+      First, crop the borders. The plate edges have black frames, scratches and scanner noise that
+      look the same in every channel no matter the shift, so they pull the match toward (0,0). We cut
+      10% off each side of every channel before aligning.
+    </p>
+    <p>
+      Second, only score the overlap. <code>np.roll</code> wraps pixels around, so shifting by 12 rows
+      pastes the bottom 12 rows onto the top. For each search we only compare the interior, trimmed by
+      the largest shift being tried.
+    </p>
+  </div>
+
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/single/cathedral.jpg" alt="Cathedral aligned with single-scale NCC" loading="lazy"></div>
+      <figcaption><b>cathedral</b><span class="off"><span class="G">G (5, 2)</span> · <span class="R">R (12, 3)</span></span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/single/monastery.jpg" alt="Monastery aligned with single-scale NCC" loading="lazy"></div>
+      <figcaption><b>monastery</b><span class="off"><span class="G">G (−3, 2)</span> · <span class="R">R (3, 2)</span></span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/single/tobolsk.jpg" alt="Tobolsk aligned with single-scale NCC" loading="lazy"></div>
+      <figcaption><b>tobolsk</b><span class="off"><span class="G">G (3, 3)</span> · <span class="R">R (6, 3)</span></span></figcaption>
+    </figure>
+  </div>
+  <div class="prose">
+    <p>
+      Offsets are (dy,dx) in pixels relative to blue. This is plain NCC on raw pixel values, and each
+      image takes about 0.3s.
+    </p>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<!-- ============ 02 PYRAMID ============ -->
+<section id="pyramid">
+  <span class="sec-num">02</span>
+  <h2>Multi-scale pyramid alignment</h2>
+  <div class="prose">
+    <p>
+      The .tif scans are around 3700 × 3200 px per channel, and the true shifts go past 170 px.
+      Brute forcing that would need a [-180,180] window, so about 130,000 NCC evaluations on
+      multi-megapixel images, which is way too slow.
+    </p>
+    <p>
+      Instead we build an image pyramid recursively. If the image is bigger than 200 px, we shrink
+      both channels by half with <code>cv.resize</code> (area interpolation) and solve the smaller
+      problem first. When the recursion returns, we double its offset and refine at the current level
+      with a [-2,2] search. The coarsest level does the full [-15,15] search. For a .tif that's four
+      halvings down to about 160 px, where [-15,15] covers [-240,240] px at full resolution, so every
+      finer level only has to fix rounding error.
+    </p>
+  </div>
+<pre><span class="c"># recursive image pyramid</span>
+def align(moving, ref, min_size=200):
+    if min(moving.shape) &lt;= min_size:
+        return search(moving, ref, (0, 0), 15)      <span class="c"># coarse: wide search</span>
+    small_m = cv.resize(moving, None, fx=0.5, fy=0.5, interpolation=cv.INTER_AREA)
+    small_r = cv.resize(ref,    None, fx=0.5, fy=0.5, interpolation=cv.INTER_AREA)
+    dy, dx = align(small_m, small_r, min_size)
+    return search(moving, ref, (2 * dy, 2 * dx), 2) <span class="c"># fine: ±2 refine</span></pre>
+  <div class="prose">
+    <p>
+      Each full resolution .tif aligns in about 0.7s for both channels. The <code>search</code> here
+      scores Sobel edge maps instead of raw pixels, which is explained in section 05.
+    </p>
+  </div>
+
+  <div class="gallery" id="all">
+    <!-- filled from the OFFSETS list in the script below -->
+  </div>
+
+  <h3>Computed offsets</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Image</th><th>Channel size</th><th>Green (dy, dx)</th><th>Red (dy, dx)</th><th>Time</th></tr></thead>
+      <tbody id="offsets"></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<!-- ============ 03 EXTRA ============ -->
+<section id="extra">
+  <span class="sec-num">03</span>
+  <h2>Three more from the collection</h2>
+  <div class="prose">
+    <p>
+      I downloaded three more plates from the
+      <a href="https://www.loc.gov/collections/prokudin-gorskii/" target="_blank" rel="noopener noreferrer">Prokudin-Gorskii collection</a>
+      and ran the same pipeline on them without changing anything.
+    </p>
+  </div>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/pyramid/ilemselga.jpg" alt="Wooden church in Ilemselga, aligned" loading="lazy"></div>
+      <figcaption><b>ilemselga</b><span class="off"><span class="G">G (40, 7)</span> · <span class="R">R (131, 11)</span></span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/pyramid/religous_painting.jpg" alt="Framed religious painting, aligned" loading="lazy"></div>
+      <figcaption><b>religous_painting</b><span class="off"><span class="G">G (30, 4)</span> · <span class="R">R (70, 6)</span></span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/pyramid/wharf.jpg" alt="Wooden wharf with a sailboat, aligned" loading="lazy"></div>
+      <figcaption><b>wharf</b><span class="off"><span class="G">G (15, −7)</span> · <span class="R">R (83, −16)</span></span></figcaption>
+    </figure>
+  </div>
+  <div class="prose">
+    <p>
+      The wharf was a good test since the red channel has to move 83 px down and 16 px left, while
+      green moves the other way. The planks also have a lot of repeated texture that could throw off
+      the match, but it still lines up.
+    </p>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<!-- ============ 04 FAILURES ============ -->
+<section id="failures">
+  <span class="sec-num">04</span>
+  <h2>Failures</h2>
+  <div class="prose">
+    <p>
+      With NCC on raw pixel values, emir.tif clearly failed. Green came out right at (49,24), but red
+      landed at (78,46) instead of (107,40), which is almost 30 rows off and leaves a red ghost over the
+      whole portrait.
+    </p>
+    <p>
+      This is because of the robe. It's bright blue, so it shows up nearly white on the blue plate and
+      nearly black on the red plate. NCC assumes the two channels have correlated intensities, but here
+      the biggest high contrast object in the frame is closer to anti-correlated between B and R, so the
+      score peaks at the wrong shift.
+    </p>
+  </div>
+  <div class="row c2" style="max-width:900px">
+    <figure>
+      <div class="frame zoomable"><img src="media/bells/emir_b.jpg" alt="Emir, blue channel: robe appears bright" loading="lazy"></div>
+      <figcaption><b>Blue plate</b>The robe is bright.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/bells/emir_r.jpg" alt="Emir, red channel: robe appears dark" loading="lazy"></div>
+      <figcaption><b>Red plate</b>The same robe is dark.</figcaption>
+    </figure>
+  </div>
+  <div class="callout">
+    <p>
+      With the edge based matching below, all 14 images align, including Emir. The limit is that it
+      only finds one global (dy,dx) per channel, so it can't fix rotation, lens distortion or a warped
+      plate.
+    </p>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<!-- ============ 05 BELLS & WHISTLES ============ -->
+<section id="bells">
+  <span class="sec-num">05</span>
+  <h2>Bells &amp; whistles</h2>
+
+  <h3>1 · Edge based alignment</h3>
+  <div class="prose">
+    <p>
+      Brightness differs between channels, but edges show up in the same place in all three, since the
+      outline of the robe is there whether the robe is light or dark. So before scoring, each channel goes
+      through a Sobel filter and we match on gradient magnitude:
+    </p>
+  </div>
+  <div class="eq-block">E = √( (∂I/∂x)² + (∂I/∂y)² )  &nbsp;&nbsp;→&nbsp;&nbsp;  score = NCC(E<sub>moving</sub>, E<sub>blue</sub>)</div>
+  <div class="row c2" style="max-width:900px">
+    <figure>
+      <div class="frame zoomable"><img src="media/bells/emir_edges_b.jpg" alt="Sobel edge magnitude of the Emir blue channel" loading="lazy"></div>
+      <figcaption><b>Blue edges</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/bells/emir_edges_r.jpg" alt="Sobel edge magnitude of the Emir red channel" loading="lazy"></div>
+      <figcaption><b>Red edges</b>Both edge maps look alike, so NCC has something consistent to match on.</figcaption>
+    </figure>
+  </div>
+  <figure style="max-width:1000px;margin-top:34px">
+    <div class="compare" style="--pos:50%">
+      <img src="media/pyramid/emir.jpg" alt="Emir aligned on Sobel edges" loading="lazy">
+      <div class="top"><img src="media/bells/emir_raw.jpg" alt="Emir aligned on raw pixels, with red misregistration" loading="lazy"></div>
+      <div class="handle"></div>
+      <span class="tag l">Raw pixels</span><span class="tag r">Edges</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Drag to compare raw-pixel and edge-based alignment">
+    </div>
+    <figcaption>
+      <b>Before / after (drag)</b>
+      Raw-pixel NCC: <span class="off"><span class="G">G (49, 24)</span> · <span class="R">R (78, 46)</span></span>
+      &nbsp;→&nbsp; Edge NCC: <span class="off"><span class="G">G (49, 24)</span> · <span class="R">R (107, 40)</span></span>
+    </figcaption>
+  </figure>
+  <div class="prose" style="margin-top:28px">
+    <p>
+      On the other 13 images the two methods agree within 1 to 3 px, for example religous_painting
+      G (27,3) -> (30,4) and three_generations G (53,14) -> (54,12). Emir is the only one where the
+      difference is obvious.
+    </p>
+  </div>
+
+  <h3>2 · Trimming the wrapped border</h3>
+  <div class="prose">
+    <p>
+      <code>np.roll</code> keeps the image the same size by wrapping, so after shifting red by 177 rows
+      the bottom 177 rows of red end up pasted across the top of the picture. After aligning, we crop
+      every row and column that any channel wrapped, so max(dy) from the top and min(dy) from the
+      bottom, and the same for x.
+    </p>
+  </div>
+  <figure style="max-width:1000px;margin-top:28px">
+    <div class="compare" style="--pos:50%">
+      <img src="media/pyramid/melons.jpg" alt="Melons with wrapped borders trimmed" loading="lazy">
+      <div class="top"><img src="media/bells/melons_untrimmed.jpg" alt="Melons before trimming, with a wrapped-around band across the top" loading="lazy"></div>
+      <div class="handle"></div>
+      <span class="tag l">Untrimmed</span><span class="tag r">Trimmed</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Drag to compare untrimmed and trimmed melons">
+    </div>
+    <figcaption><b>Before / after (drag)</b>Look at the top edge. The untrimmed version has a band of red and green wrapped around from the bottom of the plate.</figcaption>
+  </figure>
+  <div class="prose" style="margin-top:28px">
+    <p>
+      This is also why the images in the gallery have slightly different aspect ratios, since each one
+      loses the strip its shifts wrapped.
+    </p>
+  </div>
+</section>
+
+<footer>
+  mit Liebe gestaltet. 精心设计
+</footer>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+
+<script>
+/* Offsets from the run of colorize_skel.py, (dy, dx) relative to blue. */
+(function(){
+  var OFFSETS = [
+    ['cathedral',        '390 × 341',   [5,2],   [12,3],    0.2],
+    ['church',           '3634 × 3202', [25,4],  [58,-4],   0.7],
+    ['emir',             '3702 × 3209', [49,24], [107,40],  0.7],
+    ['harvesters',       '3683 × 3218', [60,17], [124,14],  0.7],
+    ['icon',             '3741 × 3244', [42,17], [90,23],   0.8],
+    ['ilemselga',        '3800 × 3270', [40,7],  [131,11],  0.7, true],
+    ['melons',           '3770 × 3241', [80,10], [177,13],  0.7],
+    ['monastery',        '391 × 341',   [-3,2],  [3,2],     0.2],
+    ['religous_painting','3742 × 3193', [30,4],  [70,6],    0.7, true],
+    ['self_portrait',    '3810 × 3251', [78,29], [176,37],  0.7],
+    ['siren',            '3817 × 3250', [49,-6], [96,-24],  0.7],
+    ['three_generations','3714 × 3209', [54,12], [111,9],   0.7],
+    ['tobolsk',          '396 × 341',   [3,3],   [6,3],     0.2],
+    ['wharf',            '3761 × 3244', [15,-7], [83,-16],  0.7, true]
+  ];
+  function n(v){ return String(v).replace('-', '−'); }
+  function pair(v){ return '(' + n(v[0]) + ', ' + n(v[1]) + ')'; }
+
+  var gal = document.getElementById('all');
+  var body = document.getElementById('offsets');
+  OFFSETS.forEach(function(o){
+    if(gal){
+      var f = document.createElement('figure');
+      f.innerHTML =
+        '<div class="frame zoomable"><img loading="lazy" src="media/pyramid/' + o[0] + '.jpg" alt="' + o[0].replace(/_/g,' ') + ', aligned with the edge-based pyramid"></div>' +
+        '<figcaption><b>' + o[0] + (o[5] ? '<span class="pill">my pick</span>' : '') + '</b>' +
+        '<span class="off"><span class="G">G ' + pair(o[2]) + '</span> · <span class="R">R ' + pair(o[3]) + '</span></span></figcaption>';
+      gal.appendChild(f);
+    }
+    if(body){
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + o[0] + (o[5] ? '<span class="pill">my pick</span>' : '') + '</td>' +
+        '<td class="m">' + o[1] + '</td>' +
+        '<td class="m"><span class="G">' + pair(o[2]) + '</span></td>' +
+        '<td class="m"><span class="R">' + pair(o[3]) + '</span></td>' +
+        '<td class="m">' + o[4].toFixed(1) + ' s</td>';
+      body.appendChild(tr);
+    }
+  });
+
+  /* before / after sliders */
+  document.querySelectorAll('.compare').forEach(function(c){
+    var input = c.querySelector('input');
+    if(!input) return;
+    input.addEventListener('input', function(){ c.style.setProperty('--pos', input.value + '%'); });
+  });
+
+  /* click any still to see it large */
+  var box = document.getElementById('lightbox');
+  if(box){
+    /* bound to the page's own elements, not document: ambient.js re-runs this
+       script on every in-site visit, and document listeners would pile up */
+    var big = box.querySelector('img');
+    document.querySelectorAll('.zoomable').forEach(function(fr){
+      fr.addEventListener('click', function(){
+        var im = fr.querySelector('img'); big.src = im.src; big.alt = im.alt;
+        box.hidden = false; box.focus();
+      });
+    });
+    box.tabIndex = -1;
+    box.addEventListener('click', function(){ box.hidden = true; });
+    box.addEventListener('keydown', function(e){ if(e.key === 'Escape') box.hidden = true; });
+  }
+})();
+</script>
+<script src="../assets/ambient.js"
+        data-src="../assets/audio/call-it-what-you-like.mp3"
+        data-title="Call It What You Like"></script>
+</body>
+</html>
