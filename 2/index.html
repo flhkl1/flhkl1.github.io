@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project 2: Fun with Filters and Frequencies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Inter:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#060a1a;
+  --deep:#0b1530;
+  --line:rgba(120,160,220,.20);
+  --line-lit:rgba(255,210,63,.42);
+  --cream:#ffffff;
+  --muted:#c9d4e4;
+  --gold:#ffd23f;
+  --lo:#ff9f5a;--hi:#6fd6ff;
+  --wrap:1240px;
+  --display:"Michroma","Futura",sans-serif;
+  --body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){
+  animation-duration:.5s;animation-timing-function:cubic-bezier(.22,.61,.36,1)}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.01s}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{
+  margin:0;color:var(--cream);
+  background:
+    radial-gradient(1200px 700px at 10% -8%,rgba(111,214,255,.12),transparent 60%),
+    radial-gradient(900px 600px at 95% 22%,rgba(255,159,90,.09),transparent 60%),
+    radial-gradient(900px 700px at 50% 110%,rgba(255,210,63,.06),transparent 60%),
+    var(--night);
+  background-attachment:fixed;
+  font-family:var(--body);font-weight:400;font-size:17px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block}
+a{color:var(--gold);text-decoration:none}
+a:hover{color:#fff}
+
+/* ---------- nav ---------- */
+.nav{position:sticky;top:0;z-index:50;
+  background:rgba(6,10,26,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);}
+.nav-in{max-width:var(--wrap);margin:0 auto;padding:15px 34px;
+  display:flex;align-items:center;gap:26px;flex-wrap:wrap;}
+.nav a{font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#fff}
+.nav a:hover,.nav a.on{color:var(--gold)}
+.nav-links{display:flex;gap:20px;margin-left:auto;flex-wrap:wrap}
+
+/* ---------- hero ---------- */
+.hero{max-width:var(--wrap);margin:0 auto;padding:100px 34px 30px;text-align:center}
+.eyebrow{font-family:var(--display);font-size:11px;letter-spacing:.42em;
+  text-transform:uppercase;color:#fff;margin-bottom:30px}
+h1{font-family:var(--body);font-weight:800;
+  font-size:clamp(2.2rem,9vw,7rem);line-height:.96;
+  letter-spacing:-.03em;margin:0;text-transform:uppercase;color:#fff}
+/* the title itself is a hybrid: crisp up close, a soft glow from far away */
+h1 .lo{display:block;color:var(--lo);filter:blur(.6px);text-shadow:0 0 28px rgba(255,159,90,.55)}
+h1 .hi{display:block;color:transparent;-webkit-text-stroke:1.4px var(--hi)}
+.hero p{font-size:1.08rem;color:var(--muted);max-width:64ch;margin:34px auto 0}
+
+/* ---------- sections ---------- */
+section{max-width:var(--wrap);margin:0 auto;padding:90px 46px 0}
+.sec-num{font-family:var(--display);font-size:10px;letter-spacing:.3em;color:var(--gold);
+  display:block;margin-bottom:18px}
+h2{font-family:var(--display);font-weight:400;
+  font-size:clamp(1.05rem,2.1vw,1.62rem);line-height:1.45;letter-spacing:.03em;
+  margin:0 0 22px;text-transform:uppercase}
+h3{font-family:var(--display);font-weight:400;font-size:.8rem;letter-spacing:.14em;
+  text-transform:uppercase;margin:56px 0 16px;color:#fff}
+p{margin:0 0 17px}
+.prose{max-width:78ch;color:#d9e2ef}
+.prose strong{color:#fff;font-weight:600}
+.prose ul{margin:0 0 17px;padding-left:22px}
+.prose li{margin-bottom:6px}
+code,.eq{font-family:var(--mono);font-size:.86em;color:var(--gold);
+  background:rgba(255,210,63,.10);padding:1px 6px;border-radius:3px}
+.eq-block{font-family:var(--mono);font-size:.95rem;color:#fff;text-align:center;
+  background:rgba(11,21,48,.7);border:1px solid var(--line);border-radius:4px;
+  padding:18px 20px;margin:24px 0;overflow-x:auto;white-space:nowrap}
+.eq-block .lo{color:var(--lo)} .eq-block .hi{color:var(--hi)}
+pre{font-family:var(--mono);font-size:.84rem;line-height:1.6;color:#e7edf7;
+  background:rgba(11,21,48,.8);border:1px solid var(--line);border-radius:4px;
+  padding:18px 22px;margin:22px 0;overflow-x:auto;max-width:78ch}
+pre .c{color:#7f93b3}
+pre .k{color:var(--hi)}
+.divider{height:1px;margin:0 auto;max-width:calc(var(--wrap) - 92px);
+  background:linear-gradient(90deg,transparent,var(--line-lit) 50%,transparent)}
+
+/* ---------- figures ---------- */
+figure{margin:0}
+figcaption{font-size:.84rem;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{font-family:var(--display);font-weight:400;font-size:.7rem;letter-spacing:.14em;
+  text-transform:uppercase;color:#fff;display:block;margin-bottom:3px}
+.frame{border:1px solid var(--line);border-radius:3px;background:var(--deep);overflow:hidden}
+.frame img{width:100%;height:auto}
+.zoomable{cursor:zoom-in}
+.tagc{font-family:var(--mono);font-size:.78rem}
+.tagc .lo{color:var(--lo)} .tagc .hi{color:var(--hi)}
+
+.row{display:grid;gap:22px;align-items:start;margin:28px 0}
+.row.c2{grid-template-columns:repeat(2,1fr)}
+.row.c3{grid-template-columns:repeat(3,1fr)}
+.row.c4{grid-template-columns:repeat(4,1fr)}
+.row.c5{grid-template-columns:repeat(5,1fr)}
+.row.narrow{max-width:900px}
+@media(max-width:900px){.row.c3,.row.c4,.row.c5{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.row.c2,.row.c3,.row.c4,.row.c5{grid-template-columns:1fr}}
+
+/* ---------- before / after slider ---------- */
+.compare{position:relative;border:1px solid var(--line);border-radius:3px;overflow:hidden;
+  background:var(--deep);user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.compare img{width:100%;height:auto;pointer-events:none}
+.compare .top{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--pos,50%)) 0 0)}
+.compare .top img{height:100%;object-fit:cover}
+.compare .handle{position:absolute;top:0;bottom:0;left:var(--pos,50%);width:2px;margin-left:-1px;
+  background:#fff;box-shadow:0 0 12px rgba(0,0,0,.6);pointer-events:none}
+.compare .handle::after{content:"◂ ▸";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(6,10,26,.85);border:1px solid rgba(255,255,255,.7);border-radius:20px;
+  font-size:11px;padding:4px 9px;white-space:nowrap;color:#fff}
+.tag{position:absolute;top:12px;font-family:var(--display);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;background:rgba(6,10,26,.8);padding:5px 9px;border-radius:2px;pointer-events:none;color:#fff}
+.tag.l{left:12px} .tag.r{right:12px}
+.compare input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+
+/* ---------- stepper: one image, every frame of a sweep underneath ---------- */
+.stepper{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;align-items:start;margin:30px 0}
+.stepper .main{position:relative}
+.stepper .readout{font-family:var(--display);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+  color:#fff;margin-bottom:12px}
+.stepper .readout span{color:var(--gold)}
+.stepper input[type=range]{width:100%;accent-color:var(--gold);margin:6px 0 18px}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.thumbs button{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:2px;overflow:hidden;
+  position:relative;background:var(--deep);aspect-ratio:1/1}
+.thumbs button img{width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity .2s ease}
+.thumbs button:hover img,.thumbs button.on img{opacity:1}
+.thumbs button.on{border-color:var(--gold)}
+.thumbs button i{position:absolute;left:4px;bottom:3px;font-style:normal;font-family:var(--mono);
+  font-size:.66rem;color:#fff;text-shadow:0 1px 4px #000}
+.thumbs button:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
+.stepper .note{font-size:.84rem;color:var(--muted);line-height:1.55}
+@media(max-width:900px){.stepper{grid-template-columns:1fr}}
+
+/* ---------- viewing distance ---------- */
+.distance{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:26px;align-items:center;margin:30px 0}
+.distance .stage{height:560px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:3px;background:var(--deep);overflow:hidden}
+.distance .stage img{width:var(--w,100%);max-width:none;height:auto;max-height:100%;object-fit:contain;
+  transition:width .12s linear}
+.distance .ctl .readout{font-family:var(--display);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+.distance .ctl .readout span{color:var(--gold)}
+.distance input[type=range]{width:100%;accent-color:var(--gold)}
+.distance .ends{display:flex;justify-content:space-between;font-family:var(--display);font-size:.6rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.chips button{all:unset;cursor:pointer;font-family:var(--display);font-size:.6rem;letter-spacing:.14em;
+  text-transform:uppercase;border:1px solid var(--line);padding:7px 11px;border-radius:14px;color:#fff}
+.chips button.on{border-color:var(--gold);color:var(--gold)}
+.chips button:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
+@media(max-width:900px){.distance{grid-template-columns:1fr}.distance .stage{height:420px}}
+
+/* ---------- stack grid ---------- */
+.stack{display:grid;grid-template-columns:70px repeat(4,minmax(0,1fr));gap:8px 10px;margin:30px 0;align-items:center}
+.stack .h{font-family:var(--display);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:center}
+.stack .lv{font-family:var(--mono);font-size:.78rem;color:var(--gold)}
+.stack .frame{aspect-ratio:1/1}
+.stack .frame img{height:100%;object-fit:cover}
+@media(max-width:640px){.stack{grid-template-columns:44px repeat(4,minmax(0,1fr));gap:5px}}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:30px 0;border:1px solid var(--line);border-radius:4px;background:rgba(11,21,48,.55);max-width:78ch}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:480px}
+th,td{padding:10px 16px;text-align:left;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--display);font-weight:400;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+td.m{font-family:var(--mono);font-size:.85rem;white-space:nowrap}
+.bar{display:inline-block;height:8px;border-radius:4px;background:var(--gold);vertical-align:middle;margin-left:10px;opacity:.8}
+
+.callout{border-left:2px solid var(--gold);background:rgba(255,210,63,.06);padding:16px 22px;margin:26px 0;max-width:78ch;color:#e6ecf5}
+.callout p:last-child{margin:0}
+
+/* ---------- lightbox ---------- */
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(3,6,16,.94);display:flex;
+  align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain}
+.lightbox[hidden]{display:none}
+
+footer{max-width:var(--wrap);margin:0 auto;padding:110px 34px 90px;text-align:center;
+  font-family:var(--display);font-size:9.5px;letter-spacing:.24em;
+  color:#fff;text-transform:uppercase;line-height:2.4}
+
+@media(max-width:640px){
+  section{padding:64px 20px 0}
+  .hero{padding:70px 20px 20px}
+  .nav-in{padding:13px 20px}
+  .nav-links{gap:12px;margin-left:0}
+}
+
+@media print{
+  @page{margin:14mm}
+  html,body{background:#fff !important;color:#111 !important}
+  .nav,.ambient,[data-ambient-veil],.lightbox{display:none !important}
+  .prose,figcaption,.hero p,h1,h2,h3,td,th{color:#111 !important}
+  .compare .top,.compare .handle,.compare input{display:none !important}
+  section{padding-top:30px}
+  figure,.row,.table-wrap,.stack{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a href="../">← Portfolio</a>
+    <div class="nav-links">
+      <a href="#p11">1.1 Convolution</a>
+      <a href="#p12">1.2 Finite diff</a>
+      <a href="#p13">1.3 DoG</a>
+      <a href="#p21">2.1 Sharpen</a>
+      <a href="#p22">2.2 Hybrids</a>
+      <a href="#p23">2.3 Stacks</a>
+      <a href="#p24">2.4 Blending</a>
+      <a href="#learned">Takeaway</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">CS 180 · Project 2 · Jack Yang</div>
+  <h1><span class="lo">Filters</span><span class="hi">&amp; Frequencies</span></h1>
+  <p>
+    Part 1 builds convolution from scratch and uses it to find edges. Part 2 splits images into low and
+    high frequencies and puts them back together in different ways: sharpening, hybrid images, and
+    multiresolution blending.
+  </p>
+</header>
+
+<!-- =================================================================== -->
+<!--                          PART 1: FILTERS                             -->
+<!-- =================================================================== -->
+
+<section id="p11">
+  <span class="sec-num">PART 1 · 1.1</span>
+  <h2>Convolutions from scratch</h2>
+  <div class="prose">
+    <p>
+      A convolution slides a kernel over the image and at every pixel takes the sum of the kernel times the
+      patch under it. The kernel gets flipped first (both axes), which is the difference between convolution and
+      cross correlation. I wrote it twice with numpy only: once with four loops, once with two loops where the
+      inner two loops become one elementwise multiply and sum.
+    </p>
+    <p>
+      For the boundary I zero pad by <code>kh//2</code> rows and <code>kw//2</code> columns on each side, so
+      the output is the same size as the input. That matches <code>scipy.signal.convolve2d(..., mode='same')</code>,
+      which also fills with zeros by default.
+    </p>
+  </div>
+<pre><span class="c"># four loops</span>
+<span class="k">def</span> convolve_four_loops(img, kernel):
+    kh, kw = kernel.shape
+    img = np.pad(img, ((kh//2, kh//2), (kw//2, kw//2)))   <span class="c"># zero fill, "same" size</span>
+    x, y = img.shape
+    out = np.zeros((x-kh+1, y-kw+1))
+    kernel = np.flip(kernel)                               <span class="c"># flip both axes</span>
+    <span class="k">for</span> i <span class="k">in</span> range(x-kh+1):
+        <span class="k">for</span> j <span class="k">in</span> range(y-kw+1):
+            total = 0
+            <span class="k">for</span> u <span class="k">in</span> range(kh):
+                <span class="k">for</span> v <span class="k">in</span> range(kw):
+                    total += img[i+u][j+v] * kernel[u][v]
+            out[i][j] = total
+    <span class="k">return</span> out
+
+<span class="c"># two loops: the inner window becomes one numpy multiply + sum</span>
+<span class="k">def</span> convolve(img, kernel):
+    kh, kw = kernel.shape
+    img = np.pad(img, ((kh//2, kh//2), (kw//2, kw//2)))
+    x, y = img.shape
+    out = np.zeros((x-kh+1, y-kw+1))
+    kernel = np.flip(kernel)
+    <span class="k">for</span> i <span class="k">in</span> range(x-kh+1):
+        <span class="k">for</span> j <span class="k">in</span> range(y-kw+1):
+            patch = img[i:i+kh, j:j+kw]
+            out[i][j] = (patch * kernel).sum()
+    <span class="k">return</span> out
+
+Dx  = np.array([[1, 0, -1]])
+Dy  = Dx.T
+Box = np.ones((9, 9)) / 81      <span class="c"># 9x9 box that sums to 1</span></pre>
+
+  <h3>Runtime and correctness</h3>
+  <div class="prose">
+    <p>
+      9x9 box filter on the 542 × 540 cameraman. The error column is the L2 norm of the difference from
+      <code>convolve2d</code>, so all three give the same answer up to floating point.
+    </p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Method</th><th>Time</th><th>‖mine − scipy‖</th></tr></thead>
+      <tbody>
+        <tr><td>Four loops</td><td class="m">8.00 s<span class="bar" style="width:160px"></span></td><td class="m">1.6e−13</td></tr>
+        <tr><td>Two loops</td><td class="m">0.49 s<span class="bar" style="width:10px"></span></td><td class="m">6.1e−14</td></tr>
+        <tr><td>scipy convolve2d</td><td class="m">0.04 s<span class="bar" style="width:2px"></span></td><td class="m">n/a</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>
+      Four loops is about 16x slower than two loops, since every multiply goes through the Python interpreter.
+      Two loops pushes the 81 multiplies per pixel into numpy, and scipy is another 12x faster because the
+      whole thing runs in compiled code. On my 1514 × 1144 selfie the two loop version takes about 3.6 s, which
+      is why the four loop timing is done on the smaller cameraman.
+    </p>
+  </div>
+
+  <h3>On my selfie (grayscale)</h3>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/selfie_original.jpg" alt="Grayscale selfie" loading="lazy"></div>
+      <figcaption><b>Original</b>Read with <code>as_gray=True</code>.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/selfie_convolved_with_dx_my_convolve.jpg" alt="Selfie convolved with Dx" loading="lazy"></div>
+      <figcaption><b>* Dx (mine)</b>Lights up vertical edges, like the door frame and the sides of my face.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/selfie_convolved_with_dy_my_convolve.jpg" alt="Selfie convolved with Dy" loading="lazy"></div>
+      <figcaption><b>* Dy (mine)</b>Lights up horizontal edges, like the headphone band and my eyebrows.</figcaption>
+    </figure>
+  </div>
+  <figure style="max-width:620px;margin-top:10px">
+    <div class="compare" style="--pos:50%">
+      <img src="media/part1/selfie_convolved_with_9x9_box_scipy_convolve2d.jpg" alt="Selfie blurred with 9x9 box using scipy" loading="lazy">
+      <div class="top"><img src="media/part1/selfie_convolved_with_9x9_box_my_convolve.jpg" alt="Selfie blurred with 9x9 box using my convolve" loading="lazy"></div>
+      <div class="handle"></div>
+      <span class="tag l">Mine</span><span class="tag r">scipy</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Drag to compare my box blur with scipy's">
+    </div>
+    <figcaption><b>9x9 box, mine vs scipy (drag)</b>No visible seam, since they're the same image. Both darken slightly at the very edge because the zero padding gets averaged in.</figcaption>
+  </figure>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<section id="p12">
+  <span class="sec-num">PART 1 · 1.2</span>
+  <h2>Finite difference operator</h2>
+  <div class="prose">
+    <p>
+      Convolving with <code>Dx = [1, 0, −1]</code> and <code>Dy = Dxᵀ</code> gives the partial derivatives.
+      The gradient magnitude combines the two into one number per pixel that says how fast brightness is
+      changing, regardless of direction.
+    </p>
+  </div>
+  <div class="eq-block">‖∇I‖ = √( (I * Dx)² + (I * Dy)² )</div>
+  <div class="row c4">
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_original.jpg" alt="Cameraman original" loading="lazy"></div>
+      <figcaption><b>Original</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_partial_derivative_in_x.jpg" alt="Partial derivative in x" loading="lazy"></div>
+      <figcaption><b>∂I/∂x</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_partial_derivative_in_y.jpg" alt="Partial derivative in y" loading="lazy"></div>
+      <figcaption><b>∂I/∂y</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_gradient_magnitude.jpg" alt="Gradient magnitude" loading="lazy"></div>
+      <figcaption><b>Gradient magnitude</b></figcaption>
+    </figure>
+  </div>
+  <div class="row c2 narrow">
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_edges_finite_difference_t_0_17.jpg" alt="Binarized edges with threshold 0.17" loading="lazy"></div>
+      <figcaption><b>Edges, t = 0.17</b>About 9.4% of pixels are marked as edges.</figcaption>
+    </figure>
+    <div class="prose" style="align-self:center">
+      <p>
+        To get an edge image we set every pixel with magnitude above <code>t</code> to 1 and the rest to 0.
+        I tried a range of values and landed on <strong>t = 0.17</strong>.
+      </p>
+      <p>
+        Lower than that and the grass at the bottom turns into white speckle, since every blade is a tiny
+        brightness change. Higher than that and the tripod legs and the buildings in the back start breaking
+        apart. At 0.17 the cameraman, camera and tripod are fully outlined and the grass is mostly gone. Some
+        speckle is still there in the bottom left, which I took as the tradeoff for keeping the faint
+        background buildings.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<section id="p13">
+  <span class="sec-num">PART 1 · 1.3</span>
+  <h2>Derivative of Gaussian (DoG) filter</h2>
+  <div class="prose">
+    <p>
+      The finite difference result is noisy because <code>Dx</code> and <code>Dy</code> respond to every
+      single pixel change. So we blur first. The Gaussian is a 19 × 19 kernel with σ = 3, built as the outer
+      product of <code>cv2.getGaussianKernel(19, 3)</code> with itself.
+    </p>
+  </div>
+<pre>g = cv2.getGaussianKernel(19, 3)
+G = g @ g.T                                  <span class="c"># 19x19 2D Gaussian</span>
+blurred = convolve2d(cameraman, G, mode='same')
+
+DoGx = convolve2d(G, Dx)                     <span class="c"># 19x21</span>
+DoGy = convolve2d(G, Dy)                     <span class="c"># 21x19</span></pre>
+
+  <h3>Method 1 · blur, then differentiate</h3>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_blurred_with_gaussian.jpg" alt="Cameraman blurred with Gaussian" loading="lazy"></div>
+      <figcaption><b>Blurred with G</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/blurred_cameraman_gradient_magnitude.jpg" alt="Gradient magnitude of the blurred cameraman" loading="lazy"></div>
+      <figcaption><b>Gradient magnitude</b>Max drops from 1.41 to 0.68.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_edges_blurred_first_t_0_05.jpg" alt="Binarized edges of blurred cameraman, threshold 0.05" loading="lazy"></div>
+      <figcaption><b>Edges, t = 0.05</b></figcaption>
+    </figure>
+  </div>
+  <figure style="max-width:620px;margin-top:10px">
+    <div class="compare" style="--pos:50%">
+      <img src="media/part1/cameraman_edges_blurred_first_t_0_05.jpg" alt="Edges after blurring" loading="lazy">
+      <div class="top"><img src="media/part1/cameraman_edges_finite_difference_t_0_17.jpg" alt="Edges from plain finite difference" loading="lazy"></div>
+      <div class="handle"></div>
+      <span class="tag l">Finite diff</span><span class="tag r">Blurred first</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Drag to compare plain finite difference edges with blurred edges">
+    </div>
+    <figcaption><b>What changed (drag)</b></figcaption>
+  </figure>
+  <div class="prose" style="margin-top:24px">
+    <p>
+      The differences:
+    </p>
+    <ul>
+      <li>The grass speckle is basically gone. The Gaussian averages out the tiny pixel to pixel changes before
+        the derivative ever sees them.</li>
+      <li>The edges are thicker and smoother. A sharp step becomes a ramp a few pixels wide, so the derivative
+        is nonzero over a wider band. The lines are also continuous instead of broken into dashes.</li>
+      <li>All the gradient values shrink, since blurring spreads each step out. That's why the threshold had
+        to drop from 0.17 to 0.05 to keep the same edges.</li>
+      <li>Very fine detail, like the thin lines on the camera, merges together. That's the cost of the blur.</li>
+    </ul>
+  </div>
+
+  <h3>Method 2 · one convolution with DoG</h3>
+  <div class="prose">
+    <p>
+      Convolution is associative, so <code>(I * G) * Dx = I * (G * Dx)</code>. We can fold the blur and the
+      derivative into one filter and only touch the image once.
+    </p>
+  </div>
+  <div class="row c4">
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/dogx_filter.jpg" alt="DoGx filter" loading="lazy"></div>
+      <figcaption><b>DoGx filter</b>Bright lobe on the left, dark lobe on the right.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_convolved_with_dogx.jpg" alt="Cameraman convolved with DoGx" loading="lazy"></div>
+      <figcaption><b>I * DoGx</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/dogy_filter.jpg" alt="DoGy filter" loading="lazy"></div>
+      <figcaption><b>DoGy filter</b>Same thing rotated 90°.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part1/cameraman_convolved_with_dogy.jpg" alt="Cameraman convolved with DoGy" loading="lazy"></div>
+      <figcaption><b>I * DoGy</b></figcaption>
+    </figure>
+  </div>
+  <div class="callout">
+    <p>
+      <strong>Verification.</strong> Comparing <code>I * DoGx</code> with <code>(I * G) * Dx</code>, the full
+      L2 difference is about 11.9. All of that is on the outermost ring of pixels: with "same" mode, the
+      two step version zero pads the already blurred image, while DoG zero pads the original. Cropping one
+      pixel off each side, the difference is 1.4e−13 for x and 1.4e−13 for y, so they're the same image.
+    </p>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<!-- =================================================================== -->
+<!--                        PART 2: FREQUENCIES                           -->
+<!-- =================================================================== -->
+
+<section id="p21">
+  <span class="sec-num">PART 2 · 2.1</span>
+  <h2>Image "sharpening"</h2>
+  <div class="prose">
+    <p>
+      The Gaussian is a low pass filter, so <code>I * G</code> keeps only the low frequencies. Subtracting it
+      from the original leaves just the high frequencies (the edges and texture). An image looks sharper when
+      those are stronger, so we add them back with some weight α:
+    </p>
+  </div>
+  <div class="eq-block">
+    I + α(I − I * G) &nbsp;=&nbsp; I * ((1 + α)e − αG)
+  </div>
+  <div class="prose">
+    <p>
+      where <code>e</code> is the unit impulse (a kernel with a single 1 in the middle, so <code>I * e = I</code>).
+      That means the whole thing is one filter, the <strong>unsharp mask</strong>. I build it with
+      <code>scipy.signal.unit_impulse((19,19), 'mid')</code> and the same 19 × 19, σ = 3 Gaussian, and apply it to
+      each RGB channel separately.
+    </p>
+  </div>
+<pre><span class="k">def</span> sharpen(image, a):
+    UnsharpMaskFilter = (1 + a) * IdentityKernel - a * GaussianFilter
+    r = fftconvolve(image[:,:,0], UnsharpMaskFilter, mode='same')
+    g = fftconvolve(image[:,:,1], UnsharpMaskFilter, mode='same')
+    b = fftconvolve(image[:,:,2], UnsharpMaskFilter, mode='same')
+    <span class="k">return</span> np.stack([r, g, b], axis=2)</pre>
+
+  <h3>Taj Mahal</h3>
+  <div class="row c4">
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/original_image.jpg" alt="Taj Mahal original" loading="lazy"></div>
+      <figcaption><b>Original</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/taj_blurred.jpg" alt="Taj blurred" loading="lazy"></div>
+      <figcaption><b>Blurred (low freq)</b>I * G</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/taj_color_after_high_freqncy_filter_applied.jpg" alt="Taj high frequencies" loading="lazy"></div>
+      <figcaption><b>High frequencies</b>I − I * G, shifted by +0.5 so negatives show up.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/taj_after_unsharp_mask_filter_applied_at_alpha_1.jpg" alt="Taj sharpened alpha 1" loading="lazy"></div>
+      <figcaption><b>Sharpened, α = 1</b></figcaption>
+    </figure>
+  </div>
+
+  <div class="stepper" data-stepper>
+    <figure class="main">
+      <div class="frame zoomable"><img alt="Taj sharpened" src="media/part2/taj_sharpened_with_alpha_1.jpg"></div>
+    </figure>
+    <div>
+      <div class="readout">Taj sharpened · α = <span>1</span></div>
+      <input type="range" min="0" max="6" value="0" step="1" aria-label="Sharpening amount">
+      <div class="thumbs"
+           data-src="media/part2/taj_sharpened_with_alpha_{a}.jpg"
+           data-values="1,2,3,4,5,8,10"></div>
+      <p class="note" style="margin-top:16px">
+        Varying α on the original. Up to about 2 or 3 it just looks crisper. Past 5 the white marble gets
+        dark halos along every edge and the sky starts to show noise, since we're amplifying everything above
+        the cutoff, including JPEG artifacts. α = 10 looks like an over-processed HDR photo.
+      </p>
+    </div>
+  </div>
+
+  <h3>Another image · Golik with pistachios</h3>
+  <div class="row c4">
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golik_original.jpg" alt="Golik original" loading="lazy"></div>
+      <figcaption><b>Original</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golik_blurred.jpg" alt="Golik blurred" loading="lazy"></div>
+      <figcaption><b>Blurred (low freq)</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golik_high_frequencies.jpg" alt="Golik high frequencies" loading="lazy"></div>
+      <figcaption><b>High frequencies</b>+0.5 for display.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golik_after_unsharp_mask_filter_applied_at_alpha_1.jpg" alt="Golik sharpened alpha 1" loading="lazy"></div>
+      <figcaption><b>Sharpened, α = 1</b>The text on the bag and the beanie knit pop the most.</figcaption>
+    </figure>
+  </div>
+
+  <h3>Blur a sharp image, then try to sharpen it back</h3>
+  <div class="prose">
+    <p>
+      For evaluation, take the sharp original, blur it with G, and run the unsharp mask on the blurred one.
+      Drag to compare against the original.
+    </p>
+  </div>
+  <div class="row c2">
+    <figure>
+      <div class="compare" style="--pos:50%">
+        <img src="media/part2/taj_after_blurred_first_and_then_unsharp_filter_applied.jpg" alt="Taj blurred then sharpened" loading="lazy">
+        <div class="top"><img src="media/part2/original_image.jpg" alt="Taj original" loading="lazy"></div>
+        <div class="handle"></div>
+        <span class="tag l">Original</span><span class="tag r">Blur → sharpen</span>
+        <input type="range" min="0" max="100" value="50" aria-label="Drag to compare Taj original with blurred then sharpened">
+      </div>
+      <figcaption><b>Taj, α = 1</b></figcaption>
+    </figure>
+    <figure>
+      <div class="compare" style="--pos:50%">
+        <img src="media/part2/golik_after_blurred_first_and_then_unsharp_filter_applied.jpg" alt="Golik blurred then sharpened" loading="lazy">
+        <div class="top"><img src="media/part2/golik_original.jpg" alt="Golik original" loading="lazy"></div>
+        <div class="handle"></div>
+        <span class="tag l">Original</span><span class="tag r">Blur → sharpen</span>
+        <input type="range" min="0" max="100" value="50" aria-label="Drag to compare Golik original with blurred then sharpened">
+      </div>
+      <figcaption><b>Golik, α = 1</b></figcaption>
+    </figure>
+  </div>
+
+  <div class="stepper" data-stepper>
+    <figure class="main">
+      <div class="frame zoomable"><img alt="Taj blurred then sharpened" src="media/part2/taj_first_blurred_and_sharpened_with_alpha_1.jpg"></div>
+    </figure>
+    <div>
+      <div class="readout">Taj blurred, then α = <span>1</span></div>
+      <input type="range" min="0" max="6" value="0" step="1" aria-label="Sharpening amount after blur">
+      <div class="thumbs"
+           data-src="media/part2/taj_first_blurred_and_sharpened_with_alpha_{a}.jpg"
+           data-values="1,2,3,4,5,8,10"></div>
+    </div>
+  </div>
+  <div class="stepper" data-stepper>
+    <figure class="main">
+      <div class="frame zoomable"><img alt="Golik blurred then sharpened" src="media/part2/golik_first_blurred_and_sharpened_with_alpha_1.jpg"></div>
+    </figure>
+    <div>
+      <div class="readout">Golik blurred, then α = <span>1</span></div>
+      <input type="range" min="0" max="6" value="0" step="1" aria-label="Sharpening amount after blur">
+      <div class="thumbs"
+           data-src="media/part2/golik_first_blurred_and_sharpened_with_alpha_{a}.jpg"
+           data-values="1,2,3,4,5,8,10"></div>
+    </div>
+  </div>
+  <div class="callout">
+    <p>
+      <strong>Observation.</strong> Sharpening can't bring back what the blur removed. The Gaussian
+      attenuates the high frequencies a lot, and the unsharp mask can only scale up whatever is left. At α = 1
+      the blurred-then-sharpened image is still clearly softer than the original: the dome outline gets a bit
+      crisper, but the carvings on the marble and the letters on the pistachio bag don't come back. Pushing α
+      higher just makes the remaining mid frequencies louder, so edges get haloed while the fine detail is
+      still missing. Sharpening is really "boost the contrast of edges", not "undo blur".
+    </p>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<section id="p22">
+  <span class="sec-num">PART 2 · 2.2</span>
+  <h2>Hybrid images</h2>
+  <div class="prose">
+    <p>
+      From Oliva, Torralba and Schyns (SIGGRAPH 2006): up close, high frequencies dominate what you see, but
+      from far away only the low frequencies survive. So if you take the <span style="color:var(--lo)">low
+      frequencies of one image</span> and add the <span style="color:var(--hi)">high frequencies of another</span>,
+      the picture changes depending on how far you stand from it. A few things from the paper that guided my
+      choices: the two images need to be aligned so the shapes group together, and a good hybrid should look
+      unambiguous at each distance instead of like a double exposure.
+    </p>
+  </div>
+  <div class="eq-block">H = <span class="lo">I₁ * G₁</span> + <span class="hi">I₂ * (e − G₂)</span></div>
+  <div class="prose">
+    <p>
+      G₁ and G₂ are Gaussians with size <code>6σ + 1</code>. The high pass is the impulse minus the Gaussian,
+      same idea as the unsharp mask. For a Gaussian with spatial σ (in pixels), the frequency response is
+      <code>exp(−2π²σ²f²)</code>, which drops to one half at
+    </p>
+  </div>
+  <div class="eq-block">f_c = √(ln 2 / 2π²) / σ ≈ 0.187 / σ &nbsp;cycles per pixel</div>
+
+  <h3>Favorite · Nutmeg × Golik (full process)</h3>
+  <div class="row c4">
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/cat_original.jpg" alt="Nutmeg the cat, original" loading="lazy"></div>
+      <figcaption><b>Nutmeg, original</b><span class="tagc hi">high pass</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golikpistachio_original.jpg" alt="Golik, original" loading="lazy"></div>
+      <figcaption><b>Golik, original</b><span class="tagc lo">low pass</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/cat_aligned.jpg" alt="Nutmeg aligned" loading="lazy"></div>
+      <figcaption><b>Nutmeg, aligned</b>Clicked both eyes in each, then rotated and scaled.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golikpistachio_aligned.jpg" alt="Golik aligned" loading="lazy"></div>
+      <figcaption><b>Golik, aligned</b></figcaption>
+    </figure>
+  </div>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/cat_high_passed.jpg" alt="Nutmeg high passed" loading="lazy"></div>
+      <figcaption><b>Nutmeg * (e − G₂), σ₂ = 4</b>+0.5 for display. Whiskers, fur and eye outlines.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golikpistachio_low_passed.jpg" alt="Golik low passed" loading="lazy"></div>
+      <figcaption><b>Golik * G₁, σ₁ = 7</b>Just the face shape, beanie and colors.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/cat_high_pass_filter_golikpistachio_low_pass_filter.jpg" alt="Hybrid of Nutmeg and Golik" loading="lazy"></div>
+      <figcaption><b>Hybrid</b>Sum, clipped to [0, 1].</figcaption>
+    </figure>
+  </div>
+
+  <h3>Fourier transforms</h3>
+  <div class="prose">
+    <p>
+      Log magnitude of the 2D FFT of each image (converted to gray), with zero frequency shifted to the center.
+    </p>
+  </div>
+  <div class="row c5">
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/fft_cat_original.jpg" alt="FFT of Nutmeg" loading="lazy"></div>
+      <figcaption><b>Nutmeg</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/fft_golik_original.jpg" alt="FFT of Golik" loading="lazy"></div>
+      <figcaption><b>Golik</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/fft_cat_high_passed.jpg" alt="FFT of high passed Nutmeg" loading="lazy"></div>
+      <figcaption><b>Nutmeg high passed</b>Center is dimmed.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/fft_golik_low_passed.jpg" alt="FFT of low passed Golik" loading="lazy"></div>
+      <figcaption><b>Golik low passed</b>Only a small bright blob near the center.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/fft_hybrid.jpg" alt="FFT of the hybrid" loading="lazy"></div>
+      <figcaption><b>Hybrid</b>Golik's center plus Nutmeg's outer ring.</figcaption>
+    </figure>
+  </div>
+  <div class="prose">
+    <p>
+      The diagonal streaks in the Nutmeg spectra come from the hard black border that alignment added after
+      rotating the image. The low passed Golik spectrum falls off fast and has that cross shape from the
+      image borders, and in the hybrid you can see both: the bright core is Golik and everything further out
+      is Nutmeg.
+    </p>
+  </div>
+
+  <h3>Cutoff frequencies</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Filter</th><th>σ (px)</th><th>Kernel</th><th>Half amplitude cutoff</th></tr></thead>
+      <tbody>
+        <tr><td><span style="color:var(--lo)">Low pass</span> on Golik</td><td class="m">7</td><td class="m">43 × 43</td><td class="m">≈ 0.027 cycles/px</td></tr>
+        <tr><td><span style="color:var(--hi)">High pass</span> on Nutmeg</td><td class="m">4</td><td class="m">25 × 25</td><td class="m">≈ 0.047 cycles/px</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>
+      The other two hybrids use σ = 13 for both filters. For this pair I picked the cutoffs separately. The low
+      pass at σ = 7 keeps enough of Golik's face shape and beanie that he still reads from far away, without
+      keeping so much detail that he competes with the cat up close. The high pass at σ = 4 means only the
+      sharpest detail of Nutmeg gets added (fur, whiskers, eye outlines), which is exactly the stuff that
+      disappears first when you step back. That leaves a gap between the two cutoffs, roughly 0.027 to 0.047
+      cycles/px, where neither image contributes much. The paper says to keep that gap small, so that's
+      something I'd tune further.
+    </p>
+  </div>
+
+  <h3>Try it · step back from the screen</h3>
+  <div class="distance" data-distance>
+    <div class="stage"><img alt="Hybrid image, resizable to simulate viewing distance" src="media/part2/cat_high_pass_filter_golikpistachio_low_pass_filter.jpg"></div>
+    <div class="ctl">
+      <div class="readout">Size · <span>100%</span></div>
+      <input type="range" min="6" max="100" value="100" aria-label="Image size, smaller is like standing further away">
+      <div class="ends"><span>far</span><span>close</span></div>
+      <div class="chips">
+        <button type="button" class="on" data-img="media/part2/cat_high_pass_filter_golikpistachio_low_pass_filter.jpg">Nutmeg × Golik</button>
+        <button type="button" data-img="media/part2/cat_high_pass_filter_derek_low_pass_filter.jpg">Nutmeg × Derek</button>
+        <button type="button" data-img="media/part2/race_high_pass_filter_golik_low_pass_filter.jpg">Race × Golik</button>
+      </div>
+      <p class="note" style="margin-top:18px;font-size:.84rem;color:var(--muted);line-height:1.55">
+        Shrinking the image does the same thing as walking away: the high frequencies get packed into too few
+        pixels for your eye to resolve, so only the low pass image is left.
+      </p>
+    </div>
+  </div>
+
+  <h3>Derek × Nutmeg</h3>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/nutmeg.jpg" alt="Nutmeg original" loading="lazy"></div>
+      <figcaption><b>Nutmeg</b><span class="tagc hi">high pass, σ = 13</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/derek.jpg" alt="Derek original" loading="lazy"></div>
+      <figcaption><b>Derek</b><span class="tagc lo">low pass, σ = 13</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/cat_high_pass_filter_derek_low_pass_filter.jpg" alt="Hybrid of Nutmeg and Derek" loading="lazy"></div>
+      <figcaption><b>Hybrid</b>Derek from far away, a whiskered Derek up close.</figcaption>
+    </figure>
+  </div>
+
+  <h3>Race × Golik</h3>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/race.jpg" alt="Race original" loading="lazy"></div>
+      <figcaption><b>Race</b><span class="tagc hi">high pass, σ = 13</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/golik.jpg" alt="Golik original" loading="lazy"></div>
+      <figcaption><b>Golik</b><span class="tagc lo">low pass, σ = 13</span></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/race_high_pass_filter_golik_low_pass_filter.jpg" alt="Hybrid of Race and Golik" loading="lazy"></div>
+      <figcaption><b>Hybrid</b>Two headshots with the same framing, so these lined up without any alignment, just a resize.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<section id="p23">
+  <span class="sec-num">PART 2 · 2.3</span>
+  <h2>Gaussian and Laplacian stacks</h2>
+  <div class="prose">
+    <p>
+      A stack is a pyramid without the downsampling, so every level stays the full image size. The Gaussian
+      stack blurs again at each level. The Laplacian stack is the difference between consecutive Gaussian
+      levels, so each level holds one band of frequencies: level 0 is the finest texture and the last level
+      is the leftover blurry color. Adding every Laplacian level back up gives the original image exactly.
+      No built-in pyramid functions.
+    </p>
+  </div>
+<pre><span class="k">def</span> GaussianStack(image, levels=8):
+    stack = []
+    <span class="k">for</span> level <span class="k">in</span> range(levels):
+        stack.append(image)
+        image = blur(image)                       <span class="c"># 19x19, σ = 3, no downsample</span>
+    <span class="k">return</span> stack
+
+<span class="k">def</span> LaplacianStack(image, levels=8):
+    g = GaussianStack(image, levels)
+    stack = [g[i] - g[i+1] <span class="k">for</span> i <span class="k">in</span> range(levels-1)]
+    stack.append(g[-1])                           <span class="c"># keep the last blur so the sum is exact</span>
+    <span class="k">return</span> stack</pre>
+
+  <h3>Apple and orange, all 8 levels</h3>
+  <div class="prose">
+    <p>Laplacian levels are normalized to [0, 1] for display, so gray means zero.</p>
+  </div>
+  <div class="stack" id="stack">
+    <span></span>
+    <span class="h">Apple Gaussian</span><span class="h">Apple Laplacian</span>
+    <span class="h">Orange Gaussian</span><span class="h">Orange Laplacian</span>
+    <!-- rows filled by the script below -->
+  </div>
+
+  <h3>Figure 3.42, recreated</h3>
+  <div class="row" style="grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:34px">
+    <figure>
+      <div class="frame zoomable" style="background:#fff"><img src="media/part2/figure_3_42.jpg" alt="Recreation of Szeliski figure 3.42" loading="lazy"></div>
+      <figcaption><b>Szeliski Fig. 3.42 (a) to (l)</b></figcaption>
+    </figure>
+    <div class="prose" style="align-self:center">
+      <p>
+        Rows 1 to 3 are Laplacian levels 0, 2 and 4. The left column is the apple's level times the mask's
+        Gaussian level, the middle is the orange's level times one minus that, and the right is their sum. The
+        last row adds up every level.
+      </p>
+      <p>
+        At level 0 the seam is basically a hard line since the mask has barely been blurred. By level 4 the
+        mask is soft, so the coarse color of the two fruits fades into each other over a wide band. That's the
+        whole trick: each frequency band gets a seam as wide as its features.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<section id="p24">
+  <span class="sec-num">PART 2 · 2.4</span>
+  <h2>Multiresolution blending</h2>
+  <div class="prose">
+    <p>
+      Following Burt and Adelson (1983), with stacks instead of pyramids. Build a Laplacian stack for both
+      images and a Gaussian stack for the mask, blend each level with its own mask, then sum the levels.
+    </p>
+  </div>
+  <div class="eq-block">result = Σₖ &nbsp; Gₖ(M) · Lₖ(A) + (1 − Gₖ(M)) · Lₖ(B)</div>
+<pre><span class="k">for</span> level <span class="k">in</span> range(levels):
+    current = MaskGaussian[level] * ALaplacian[level] + (1 - MaskGaussian[level]) * BLaplacian[level]
+    total += current
+total = np.clip(total, 0, 1)</pre>
+
+  <h3>The oraple</h3>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/apple.jpg" alt="Apple" loading="lazy"></div>
+      <figcaption><b>Apple</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/orange.jpg" alt="Orange" loading="lazy"></div>
+      <figcaption><b>Orange</b></figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/oraple.jpg" alt="Oraple" loading="lazy"></div>
+      <figcaption><b>Oraple</b>Step mask at the middle column, 8 levels.</figcaption>
+    </figure>
+  </div>
+
+  <h3>Golik × Race · straight seam</h3>
+  <div class="row c3">
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/golik.jpg" alt="Golik" loading="lazy"></div>
+      <figcaption><b>Golik</b>Left side.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/orig/race.jpg" alt="Race" loading="lazy"></div>
+      <figcaption><b>Race</b>Right side.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/golik_left_blended_with_race_right.jpg" alt="Golik blended with Race" loading="lazy"></div>
+      <figcaption><b>Blend</b>Seam at column 600, 40 levels.</figcaption>
+    </figure>
+  </div>
+  <div class="prose">
+    <p>
+      Two changes from the oraple. The seam is at column 600 instead of the middle of the image, because
+      that's where the center of the face is. And it uses 40 levels instead of 8. These photos are about 4x
+      wider than the apple, so with 8 levels of a σ = 3 blur the coarsest mask is still too narrow relative to
+      the face and you can see a seam in the skin tone. More levels lets the lowest band blend over a much
+      wider region.
+    </p>
+  </div>
+
+  <h3>Nutmeg on my face · irregular mask</h3>
+  <div class="row c4">
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/selfie_original.jpg" alt="Selfie" loading="lazy"></div>
+      <figcaption><b>Selfie</b>Background, B.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/nutmeg_shifted_onto_the_selfie_s_face.jpg" alt="Nutmeg shifted onto the selfie canvas" loading="lazy"></div>
+      <figcaption><b>Nutmeg, shifted</b>Foreground, A. Moved so the face centers line up.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/elliptical_mask.jpg" alt="Elliptical mask" loading="lazy"></div>
+      <figcaption><b>Mask, M</b>Ellipse, 220 × 260 px radii.</figcaption>
+    </figure>
+    <figure>
+      <div class="frame zoomable"><img src="media/part2/nutmeg_s_face_blended_onto_the_selfie_elliptical_mask.jpg" alt="Nutmeg's face blended onto the selfie" loading="lazy"></div>
+      <figcaption><b>Blend</b>40 levels.</figcaption>
+    </figure>
+  </div>
+  <div class="prose">
+    <p>
+      I found the center of each face by eye, (563, 780) in the selfie and (654, 362) in the cat photo, and
+      shifted Nutmeg onto a black canvas the size of the selfie so those two points match. The mask is 1 inside
+      an ellipse around my face and 0 outside. Because the mask's Gaussian stack gets blurrier at every level,
+      the fur blends into my hair and skin gradually instead of having a hard oval cut out.
+    </p>
+  </div>
+  <figure style="max-width:620px;margin-top:10px">
+    <div class="compare" style="--pos:50%">
+      <img src="media/part2/nutmeg_s_face_blended_onto_the_selfie_elliptical_mask.jpg" alt="Blended result" loading="lazy">
+      <div class="top"><img src="media/part2/selfie_original.jpg" alt="Original selfie" loading="lazy"></div>
+      <div class="handle"></div>
+      <span class="tag l">Before</span><span class="tag r">After</span>
+      <input type="range" min="0" max="100" value="50" aria-label="Drag to compare selfie before and after blending">
+    </div>
+    <figcaption><b>Before / after (drag)</b></figcaption>
+  </figure>
+</section>
+
+<div class="divider" style="margin-top:90px"></div>
+
+<section id="learned">
+  <span class="sec-num">03</span>
+  <h2>Most important thing I learned</h2>
+  <div class="prose">
+    <p>
+      Almost everything in this project is the same two filters. A Gaussian keeps the low frequencies, and
+      the impulse minus a Gaussian keeps the high ones. Edge detection, sharpening, hybrids and blending are
+      all just different ways of splitting an image into those bands and adding them back with different
+      weights. Thinking about images in terms of frequency instead of pixels made the hybrid and blending
+      results make sense. A seam looks bad because a hard edge has energy in every frequency, so the fix is to
+      give each band its own seam width.
+    </p>
+  </div>
+</section>
+
+<footer>
+  mit Liebe gestaltet. 精心设计
+</footer>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+
+<script>
+(function(){
+  /* Laplacian / Gaussian stack grid: one row per level */
+  var stack = document.getElementById('stack');
+  if(stack){
+    for(var L = 0; L < 8; L++){
+      var html = '<span class="lv">L' + L + '</span>';
+      [['apple','gaussian'],['apple','laplacian'],['orange','gaussian'],['orange','laplacian']].forEach(function(p){
+        html += '<div class="frame zoomable"><img loading="lazy" src="media/part2/' + p[0] + '_' + p[1] + '_level_' + L +
+                '.jpg" alt="' + p[0] + ' ' + p[1] + ' level ' + L + '"></div>';
+      });
+      stack.insertAdjacentHTML('beforeend', html);
+    }
+  }
+
+  /* steppers: a slider plus a strip of every frame */
+  document.querySelectorAll('[data-stepper]').forEach(function(s){
+    var strip = s.querySelector('.thumbs');
+    var tpl = strip.getAttribute('data-src');
+    var vals = strip.getAttribute('data-values').split(',');
+    var main = s.querySelector('.main img');
+    var out = s.querySelector('.readout span');
+    var range = s.querySelector('input[type=range]');
+    var btns = vals.map(function(v, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', 'alpha ' + v);
+      b.innerHTML = '<img loading="lazy" src="' + tpl.replace('{a}', v) + '" alt=""><i>α=' + v + '</i>';
+      b.addEventListener('click', function(){ set(i); });
+      strip.appendChild(b);
+      return b;
+    });
+    function set(i){
+      main.src = tpl.replace('{a}', vals[i]);
+      out.textContent = vals[i];
+      range.value = i;
+      btns.forEach(function(b, j){ b.classList.toggle('on', j === i); });
+    }
+    range.max = vals.length - 1;
+    range.addEventListener('input', function(){ set(+range.value); });
+    set(0);
+  });
+
+  /* viewing distance */
+  document.querySelectorAll('[data-distance]').forEach(function(d){
+    var img = d.querySelector('.stage img');
+    var range = d.querySelector('input[type=range]');
+    var out = d.querySelector('.readout span');
+    function size(){ d.style.setProperty('--w', range.value + '%'); out.textContent = range.value + '%'; }
+    range.addEventListener('input', size);
+    d.querySelectorAll('.chips button').forEach(function(b, _, all){
+      b.addEventListener('click', function(){
+        img.src = b.getAttribute('data-img');
+        all.forEach(function(x){ x.classList.toggle('on', x === b); });
+      });
+    });
+    size();
+  });
+
+  /* before / after sliders */
+  document.querySelectorAll('.compare').forEach(function(c){
+    var input = c.querySelector('input');
+    if(!input) return;
+    input.addEventListener('input', function(){ c.style.setProperty('--pos', input.value + '%'); });
+  });
+
+  /* click any still to see it large */
+  var box = document.getElementById('lightbox');
+  if(box){
+    var big = box.querySelector('img');
+    document.querySelectorAll('.zoomable').forEach(function(fr){
+      fr.addEventListener('click', function(){
+        var im = fr.querySelector('img'); big.src = im.src; big.alt = im.alt;
+        box.hidden = false; box.focus();
+      });
+    });
+    box.tabIndex = -1;
+    box.addEventListener('click', function(){ box.hidden = true; });
+    box.addEventListener('keydown', function(e){ if(e.key === 'Escape') box.hidden = true; });
+  }
+})();
+</script>
+<script src="../assets/ambient.js"
+        data-src="../assets/audio/call-it-what-you-like.mp3"
+        data-title="Call It What You Like"></script>
+</body>
+</html>

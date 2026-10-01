@@ -216,6 +216,24 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   <span class="avatar-label">Project 1 &nbsp;→</span>
 </a>
 
+<!-- The glass cabinet between the windows: the way into Project 2. Same
+     treatment as the doors and the picture, traced in the painting's natural
+     pixels. Its mirrored doors fit a project about filters and frequencies. -->
+<a class="avatar" id="cabinet" href="./2/"
+   aria-label="Enter Project 2 · the glass cabinet">
+  <svg class="door" aria-hidden="true">
+    <defs>
+      <path id="cabinet-path" vector-effect="non-scaling-stroke" d="M692 335 L692 178 L682 165 L700 152 L728 140 L742 128 L746 105 L755 88 L765 105 L768 128 L782 140 L812 152 L834 165 L827 178 L827 335 Z"/>
+    </defs>
+    <g id="cabinet-g">
+      <use class="hit"  href="#cabinet-path"/>
+      <use class="glow" href="#cabinet-path"/>
+      <use class="rim"  href="#cabinet-path"/>
+    </g>
+  </svg>
+  <span class="avatar-label">Project 2 &nbsp;→</span>
+</a>
+
 <div class="wrap">
   <div class="eyebrow"><a class="ig" href="https://www.instagram.com/jackyang03/"
          target="_blank" rel="noopener noreferrer">Jack Yang</a></div>
@@ -245,6 +263,10 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   var pic      = document.getElementById('picture');
   var picG     = document.getElementById('picture-g');
   var picLabel = pic && pic.querySelector('.avatar-label');
+  var CAB   = { cx:760, labelY:250 };     // the glass cabinet, Project 2
+  var cab      = document.getElementById('cabinet');
+  var cabG     = document.getElementById('cabinet-g');
+  var cabLabel = cab && cab.querySelector('.avatar-label');
   if(!img || !hot) return;
 
   function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
@@ -330,6 +352,16 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
       pic.classList.add('placed');
     }
 
+    if(cab){
+      if(cabG) cabG.setAttribute('transform',
+        'translate(' + ox + ',' + oy + ') scale(' + scale + ')');
+      if(cabLabel){
+        cabLabel.style.left = (ox + CAB.cx*scale) + 'px';
+        cabLabel.style.top  = (oy + CAB.labelY*scale) + 'px';
+      }
+      cab.classList.add('placed');
+    }
+
     // Lay the type onto the table and the carpet, using the crop just solved.
     var scene = cw >= 900 && ch >= 560;
     document.body.classList.toggle('scene', scene);
@@ -372,6 +404,7 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(place);
   hot.addEventListener('pointerenter', function(){ hot.classList.add('touched'); }, {once:true});
   if(pic) pic.addEventListener('pointerenter', function(){ pic.classList.add('touched'); }, {once:true});
+  if(cab) cab.addEventListener('pointerenter', function(){ cab.classList.add('touched'); }, {once:true});
 })();
 </script>
 
