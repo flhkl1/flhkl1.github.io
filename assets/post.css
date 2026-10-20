@@ -1,0 +1,164 @@
+/* Write-up pages: one quiet column of text, figures in between.
+   Shared by every N/index.html; the words live in N/post.md. */
+:root{
+  --text:#222;
+  --gray:#999;
+  --soft:#666;
+  --line:#e6e6e6;
+  --blue:rgb(89,139,231);
+  --code:#f5f5f5;
+  --col:720px;
+  --wide:980px;
+}
+html{background:#fff;scroll-padding-top:24px}
+body{margin:0;background:#fff;color:var(--text);
+  font:17px/1.7 -apple-system,BlinkMacSystemFont,"Helvetica Neue","Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+#post{max-width:var(--col);margin:0 auto;padding:56px 20px 80px}
+#post a{color:var(--blue);text-decoration:none}
+#post a:hover{text-decoration:underline}
+
+/* ---------- header ---------- */
+.cover{display:block;width:100vw;max-width:none;margin:-56px 0 28px calc(50% - 50vw);height:min(52vh,520px);object-fit:cover}
+.post-head{margin-bottom:40px}
+.post-head .home{font-size:.88rem;color:var(--gray) !important}
+.post-head h1{font-size:2.1rem;line-height:1.2;font-weight:700;margin:22px 0 6px;letter-spacing:-.01em}
+.byline{color:var(--gray);margin:0;font-size:.95rem}
+
+/* ---------- text ---------- */
+.post-body h2{font-size:1.5rem;line-height:1.3;font-weight:700;margin:2.4em 0 .6em}
+.post-body h3{font-size:1.15rem;line-height:1.35;font-weight:700;margin:2em 0 .5em}
+.post-body h4{font-size:1rem;font-weight:700;margin:1.6em 0 .4em}
+.post-body p,.post-body ul,.post-body ol{margin:0 0 1.1em}
+.post-body ul,.post-body ol{padding-left:1.4em}
+.post-body li{margin:.25em 0}
+.post-body hr{border:0;border-top:1px solid var(--line);margin:3em 0}
+.post-body blockquote{margin:1.2em 0;padding:0 0 0 1em;border-left:3px solid var(--line);color:var(--soft)}
+.post-body strong{font-weight:650}
+.post-body code{font:.86em/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);
+  padding:.1em .35em;border-radius:3px}
+.post-body pre{background:var(--code);border-radius:4px;padding:14px 16px;overflow-x:auto;margin:0 0 1.2em}
+.post-body pre code{background:none;padding:0;font-size:.82rem;line-height:1.55}
+.post-body table{border-collapse:collapse;margin:0 0 1.4em;font-size:.92rem;width:100%;display:block;overflow-x:auto}
+.post-body th,.post-body td{border-bottom:1px solid var(--line);padding:6px 12px 6px 0;text-align:left;white-space:nowrap}
+.post-body th{font-weight:650}
+.post-body .math{margin:1.2em 0;overflow-x:auto;overflow-y:hidden}
+.post-body .katex{font-size:1.05em}
+.post-body code.tex{color:var(--soft)}
+
+/* "› Why?"-style folds: <details><summary>…</summary> … </details> */
+.post-body details{margin:0 0 1.2em}
+.post-body summary{cursor:pointer;color:var(--blue);list-style:none;display:inline}
+.post-body summary::-webkit-details-marker{display:none}
+.post-body summary::before{content:"› ";}
+.post-body details[open] summary::before{content:"⌄ ";}
+.post-body details[open]{border-left:3px solid var(--line);padding-left:14px}
+.post-body details[open] summary{display:block;margin-bottom:.6em}
+
+/* ---------- figures ---------- */
+.figs{display:grid;gap:10px;margin:1.6em 0 1.8em;align-items:start}
+.figs.n1{grid-template-columns:1fr}
+.figs.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.figs.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.figs.n4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.figs.n5,.figs.n6,.figs.n7,.figs.n8{grid-template-columns:repeat(4,minmax(0,1fr))}
+/* rows of three or more break out of the text column a little */
+@media(min-width:1040px){
+  .figs.n3,.figs.n4,.figs.n5,.figs.n6,.figs.n7,.figs.n8,.slider .panels{
+    width:var(--wide);margin-left:calc((var(--col) - 40px - var(--wide)) / 2)}
+}
+@media(max-width:640px){.figs.n3,.figs.n4,.figs.n5,.figs.n6,.figs.n7,.figs.n8{grid-template-columns:repeat(2,minmax(0,1fr))}}
+figure{margin:0}
+.figs img{width:100%;height:auto;display:block;cursor:zoom-in}
+.figs.n1 img{width:auto;max-width:100%;max-height:560px;margin:0 auto}
+figcaption,.cap{color:var(--gray);font-size:.86rem;line-height:1.45;text-align:center;margin:.5em 0 0}
+.cap{margin:.6em 0 1.6em}
+
+/* ---------- placeholders ---------- */
+.todo,.needed{border:1px dashed #ccc;background:#fafafa;border-radius:4px;padding:12px 16px;
+  margin:0 0 1.2em;color:var(--soft);font-size:.92rem;line-height:1.5}
+.todo .label,.needed .label{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gray);font-weight:650;margin-bottom:2px}
+.needed{border-color:#f0a35e;background:#fff7f0;color:#9a5a1d;text-align:center;padding:22px 16px}
+.needed .label{color:#d9822b}
+
+/* ---------- widgets ---------- */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;justify-content:center}
+.chips button{all:unset;cursor:pointer;font-size:.82rem;padding:3px 11px;border:1px solid var(--line);
+  border-radius:14px;color:var(--soft)}
+.chips button.on{border-color:var(--blue);color:var(--blue)}
+.chips button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.slider,.compare,.distance,.flip{margin:1.6em 0 1.8em}
+.slider .stage{display:flex;justify-content:center}
+.slider .stage figure{max-width:440px;width:100%}
+.slider .stage img{width:100%;height:auto;display:block;cursor:zoom-in}
+.slider .stage.panels{display:grid;gap:10px}
+.slider .stage.panels figure{max-width:none}
+.slider .stage.panels.n2{grid-template-columns:repeat(2,1fr)}
+.slider .stage.panels.n3{grid-template-columns:repeat(3,1fr)}
+.slider .stage.panels.n4{grid-template-columns:repeat(4,1fr)}
+.slider .ctl{display:flex;align-items:center;gap:12px;max-width:440px;margin:10px auto 0}
+.slider input[type=range]{flex:1;accent-color:var(--blue)}
+.readout{font:.82rem ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--soft);min-width:5.5em;text-align:right}
+.thumbs{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.thumbs button{all:unset;cursor:pointer;width:44px;height:44px;border:1px solid transparent;opacity:.55}
+.thumbs button img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs button.on{opacity:1;border-color:var(--blue)}
+.thumbs button:hover{opacity:1}
+
+.cmp{position:relative;max-width:520px;margin:0 auto;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.cmp img{width:100%;height:auto;display:block;pointer-events:none}
+.cmp .top{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--pos,50%)) 0 0)}
+.cmp .top img{height:100%;object-fit:cover}
+.cmp .handle{position:absolute;top:0;bottom:0;left:var(--pos,50%);width:2px;margin-left:-1px;background:#fff;
+  box-shadow:0 0 6px rgba(0,0,0,.45);pointer-events:none}
+.cmp .tag{position:absolute;top:8px;font-size:.74rem;background:rgba(255,255,255,.88);color:#333;
+  padding:1px 7px;border-radius:3px;pointer-events:none}
+.cmp .tag.l{left:8px}.cmp .tag.r{right:8px}
+.cmp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:ew-resize}
+
+.distance .stage{height:420px;display:flex;align-items:center;justify-content:center;background:#fafafa;border-radius:4px}
+.distance .stage img{width:100%;max-width:420px;height:auto}
+.distance .ctl{display:flex;align-items:center;gap:10px;max-width:440px;margin:10px auto 0}
+.distance .readout{min-width:0}
+.distance input{flex:1;accent-color:var(--blue)}
+
+.flip{text-align:center}
+.flip figure{max-width:400px;margin:0 auto;overflow:hidden}
+.flip img{width:100%;display:block;transition:transform .9s cubic-bezier(.65,0,.35,1);cursor:zoom-in}
+.flip.flipped img{transform:rotate(180deg)}
+.flip .cap{margin:.5em 0 .4em}
+.flip button{all:unset;cursor:pointer;color:var(--blue);font-size:.88rem}
+
+/* ---------- flow title (project 3) ---------- */
+h1.flow{position:relative;cursor:pointer;width:fit-content}
+h1.flow canvas{position:absolute;image-rendering:pixelated;pointer-events:none;transition:opacity .5s ease}
+h1.flow .txt{transition:opacity .5s ease}
+h1.flowing .txt{opacity:0}
+
+/* ---------- footer, lightbox ---------- */
+.post-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-size:.9rem}
+#lightbox{position:fixed;inset:0;z-index:100;background:rgba(255,255,255,.96);display:flex;
+  align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+#lightbox[hidden]{display:none}
+#lightbox img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* ---------- print: the PDF for Gradescope ---------- */
+@media print{
+  @page{margin:16mm}
+  body{font-size:11pt}
+  #post{max-width:none;padding:0}
+  .todo,.post-foot,.post-head .home,.chips,.ctl,.thumbs,.flip button,.ambient,[data-ambient-veil]{display:none !important}
+  .figs,.slider,.compare,.distance,.flip,pre,table{break-inside:avoid}
+  .figs{width:auto !important;margin-left:0 !important}
+  .post-body details{border:0;padding:0}
+  .post-body details > *{display:block}
+  .cmp .top,.cmp .handle,.cmp input,.cmp .tag{display:none}
+  h1.flow canvas{display:none}h1.flowing .txt{opacity:1}
+}
+
+/* stills that stand in for GIFs on paper */
+.print-only{display:none}
+@media print{.print-only{display:block}}

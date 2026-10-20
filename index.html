@@ -108,6 +108,12 @@ body.scene h1{
   opacity:0;transition:opacity .8s ease;
 }
 body.scene .eyebrow.laid,body.scene .stamp.laid,body.scene h1.laid{opacity:1}
+/* The name and year lie on the coffee table, which is itself the way into
+   Project 3: lift them over its hotspot, but let clicks fall through to the
+   table everywhere except the Instagram link. */
+body.scene .eyebrow,body.scene .stamp{z-index:3;pointer-events:none}
+body.scene .eyebrow .ig{pointer-events:auto}
+.eyebrow .ig{position:relative;z-index:3}
 body.scene .eyebrow,body.scene .stamp{font-size:12.5px;letter-spacing:.34em;
   text-shadow:0 1px 10px rgba(5,9,22,.92)}
 body.scene h1{font-size:38px;line-height:1.34;letter-spacing:.04em;
@@ -234,6 +240,25 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   <span class="avatar-label">Project 2 &nbsp;→</span>
 </a>
 
+<!-- The coffee table: the way into Project 3. Same treatment again -- the
+     glass top traced in the painting's natural pixels, lit from the edge. Its
+     name and year are laid on this same glass, so those sit above the hotspot
+     (see body.scene .eyebrow below) and the Instagram link stays clickable. -->
+<a class="avatar" id="table" href="./3/"
+   aria-label="Enter Project 3 · the coffee table">
+  <svg class="door" aria-hidden="true">
+    <defs>
+      <path id="table-path" vector-effect="non-scaling-stroke" d="M626 560 L742 496 L1102 534 L1099 546 L950 642 L626 571 Z"/>
+    </defs>
+    <g id="table-g">
+      <use class="hit"  href="#table-path"/>
+      <use class="glow" href="#table-path"/>
+      <use class="rim"  href="#table-path"/>
+    </g>
+  </svg>
+  <span class="avatar-label">Project 3 &nbsp;→</span>
+</a>
+
 <div class="wrap">
   <div class="eyebrow"><a class="ig" href="https://www.instagram.com/jackyang03/"
          target="_blank" rel="noopener noreferrer">Jack Yang</a></div>
@@ -267,6 +292,10 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   var cab      = document.getElementById('cabinet');
   var cabG     = document.getElementById('cabinet-g');
   var cabLabel = cab && cab.querySelector('.avatar-label');
+  var TBL   = { cx:905, cy:592 };         // the coffee table, Project 3
+  var tbl      = document.getElementById('table');
+  var tblG     = document.getElementById('table-g');
+  var tblLabel = tbl && tbl.querySelector('.avatar-label');
   if(!img || !hot) return;
 
   function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
@@ -362,6 +391,16 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
       cab.classList.add('placed');
     }
 
+    if(tbl){
+      if(tblG) tblG.setAttribute('transform',
+        'translate(' + ox + ',' + oy + ') scale(' + scale + ')');
+      if(tblLabel){
+        tblLabel.style.left = (ox + TBL.cx*scale) + 'px';
+        tblLabel.style.top  = (oy + TBL.cy*scale) + 'px';
+      }
+      tbl.classList.add('placed');
+    }
+
     // Lay the type onto the table and the carpet, using the crop just solved.
     var scene = cw >= 900 && ch >= 560;
     document.body.classList.toggle('scene', scene);
@@ -405,6 +444,7 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   hot.addEventListener('pointerenter', function(){ hot.classList.add('touched'); }, {once:true});
   if(pic) pic.addEventListener('pointerenter', function(){ pic.classList.add('touched'); }, {once:true});
   if(cab) cab.addEventListener('pointerenter', function(){ cab.classList.add('touched'); }, {once:true});
+  if(tbl) tbl.addEventListener('pointerenter', function(){ tbl.classList.add('touched'); }, {once:true});
 })();
 </script>
 
