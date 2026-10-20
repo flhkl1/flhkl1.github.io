@@ -2,6 +2,7 @@
 title: Flow Matching
 subtitle: CS 180 Project 3
 date: October 2026
+cover: assets/background.jpg
 effect: flow
 ---
 

@@ -157,6 +157,7 @@
 
     widgets(art);
     if (meta.effect === 'flow') flowTitle(document.getElementById('title'));
+    if (meta.effect === 'rgb') rgbPlates(art.querySelector('img.cover'), document.getElementById('title'));
     if (location.hash) {
       var target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (target) target.scrollIntoView();
@@ -345,6 +346,129 @@
       box.hidden = false;
       box.focus();
     });
+  }
+
+  /* ------------------------------------------------------------- rgb plates
+     Project 1 only: the cover is split into its R, G and B channels (an SVG
+     colour matrix each) and recombined with screen blending, so aligned it is
+     the plain image. B is the reference, as in the project. It arrives
+     misaligned and snaps into place coarse to fine, halving the offsets each
+     step like the pyramid; the cursor pulls the plates apart and leaving
+     re-aligns them; a click scrambles them again. The title carries the same
+     offsets, scaled down, as cyan/magenta/yellow copies multiplied together. */
+  function rgbPlates(cover, h1) {
+    if (!cover || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+
+    if (!document.getElementById('plate-r')) {
+      var rows = { r: '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0',
+                   g: '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0',
+                   b: '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0' };
+      var defs = Object.keys(rows).map(function (c) {
+        return '<filter id="plate-' + c + '" color-interpolation-filters="sRGB">' +
+               '<feColorMatrix type="matrix" values="' + rows[c] + '"/></filter>';
+      }).join('');
+      var svg = document.createElement('div');
+      svg.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true">' + defs + '</svg>';
+      document.body.appendChild(svg.firstChild);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'cover rgb-cover';
+    wrap.title = 'Move to misalign the plates · click to scramble';
+    cover.parentNode.replaceChild(wrap, cover);
+    cover.className = 'plain';                        // kept for print
+    wrap.appendChild(cover);
+    var plates = ['b', 'g', 'r'].map(function (c) {
+      var im = document.createElement('img');
+      im.src = cover.src; im.alt = ''; im.setAttribute('aria-hidden', 'true');
+      im.style.filter = 'url(#plate-' + c + ')';
+      wrap.appendChild(im);
+      return im;
+    });
+    var ro = document.createElement('span');
+    ro.className = 'ro';
+    wrap.appendChild(ro);
+
+    if (h1) {
+      var text = h1.textContent;
+      h1.setAttribute('data-text', text);
+      h1.innerHTML = '<span class="txt">' + esc(text) + '</span>';
+      h1.classList.add('rgb');
+    }
+
+    var MAX = 28, TITLE = 0.15;
+    var cur = { gx: 0, gy: 0, rx: 0, ry: 0 }, tgt = { gx: 0, gy: 0, rx: 0, ry: 0 };
+    var raf = 0, stepper = 0, hold = 0;
+
+    function apply() {
+      var s = 1 + (2 * MAX + 4) / Math.max(1, wrap.clientHeight);   // hide the edges
+      plates[1].style.transform = 'translate(' + cur.gx + 'px,' + cur.gy + 'px) scale(' + s + ')';
+      plates[2].style.transform = 'translate(' + cur.rx + 'px,' + cur.ry + 'px) scale(' + s + ')';
+      plates[0].style.transform = 'scale(' + s + ')';
+      var r = function (v) { return Math.round(v); };
+      ro.textContent = 'G (' + r(cur.gy) + ', ' + r(cur.gx) + ')  ·  R (' + r(cur.ry) + ', ' + r(cur.rx) + ')' +
+        (r(cur.gx) || r(cur.gy) || r(cur.rx) || r(cur.ry) ? '' : '  ·  aligned');
+      if (h1) {
+        h1.style.setProperty('--gx', cur.gx * TITLE + 'px');
+        h1.style.setProperty('--gy', cur.gy * TITLE + 'px');
+        h1.style.setProperty('--rx', cur.rx * TITLE + 'px');
+        h1.style.setProperty('--ry', cur.ry * TITLE + 'px');
+      }
+    }
+
+    function stop() { cancelAnimationFrame(raf); clearTimeout(stepper); clearTimeout(hold); raf = stepper = hold = 0; }
+
+    // Coarse to fine: halve every offset per step, then a last snap to zero.
+    function align() {
+      stop();
+      (function step() {
+        var done = true;
+        for (var k in cur) {
+          cur[k] = Math.abs(cur[k]) <= 1 ? 0 : Math.trunc(cur[k] / 2);
+          if (cur[k]) done = false;
+        }
+        apply();
+        if (!done) stepper = setTimeout(step, 150);
+      })();
+    }
+
+    // A fresh, raw-plate-looking misalignment: mostly vertical, R about twice G.
+    function scramble() {
+      stop();
+      var sx = Math.random() < .5 ? -1 : 1, sy = Math.random() < .5 ? -1 : 1;
+      cur.gy = sy * (8 + Math.random() * 6);  cur.gx = sx * Math.random() * 6;
+      cur.ry = cur.gy * 2 + (Math.random() - .5) * 6;
+      cur.rx = cur.gx * 2 + (Math.random() - .5) * 6;
+      apply();
+      hold = setTimeout(align, 650);
+    }
+
+    function follow() {
+      var moving = false;
+      for (var k in cur) {
+        cur[k] += (tgt[k] - cur[k]) * 0.18;
+        if (Math.abs(tgt[k] - cur[k]) > 0.05) moving = true;
+      }
+      apply();
+      raf = moving ? requestAnimationFrame(follow) : 0;
+    }
+
+    wrap.addEventListener('pointermove', function (e) {
+      var b = wrap.getBoundingClientRect();
+      var nx = ((e.clientX - b.left) / b.width) * 2 - 1, ny = ((e.clientY - b.top) / b.height) * 2 - 1;
+      tgt.gx = nx * MAX / 2; tgt.gy = ny * MAX / 2;
+      tgt.rx = nx * MAX;     tgt.ry = ny * MAX;
+      clearTimeout(stepper); clearTimeout(hold); stepper = hold = 0;
+      if (!raf) raf = requestAnimationFrame(follow);
+    });
+    wrap.addEventListener('pointerleave', function () {
+      for (var k in cur) cur[k] = Math.round(cur[k]);
+      align();
+    });
+    wrap.addEventListener('click', scramble);
+    addEventListener('resize', apply);
+
+    if (cover.complete) scramble(); else cover.addEventListener('load', scramble);
   }
 
   /* ------------------------------------------------------------- flow title

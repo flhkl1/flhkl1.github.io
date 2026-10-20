@@ -1,4 +1,5 @@
-/* Site-wide background audio that never stops, plus a persistent on/off toggle.
+/* Site-wide background audio, kept as a secret: the site is silent until the
+   visitor presses M, and M again turns it back off. There is no visible control.
    Include with:
      <script src="assets/ambient.js" data-src="assets/audio/underground.mp3"
              data-title="Nick Curly - Underground"></script>
@@ -6,18 +7,15 @@
 
    Two halves:
 
-   1. THE PLAYER. Defaults to on. Browsers refuse to start audible audio before
-      the visitor has interacted with the page, so when the first play() is
-      rejected we start the track MUTED (always permitted) and unmute on the
-      first click / keypress / scroll. The clock is already running by then, so
-      sound arrives instantly rather than starting over.
+   1. THE PLAYER. Off by default, and nothing but M ever starts it -- not
+      opening a project, not a click, not a reload. Pressing M is itself a user
+      gesture, so the track starts audibly straight away.
 
    2. SEAMLESS NAVIGATION. A normal link click tears down the document and kills
       the audio with it. Internal links are therefore intercepted and the next
       page is fetched and swapped into the live document instead. Nothing
       unloads, so the track plays straight through the navigation with no gap
-      and no second autoplay prompt. Hard loads (typed URL, refresh, back into a
-      cold tab) fall back to resuming from the stored position.
+      and no second autoplay prompt.
 
       Because the swap is instant it reads as a cut, so every navigation is
       wrapped in a fade through the site's night blue -- out, swap, back in.
@@ -30,181 +28,28 @@
   var tag   = document.currentScript;
   var SELF  = tag.src;
   var SRC   = new URL(tag.getAttribute('data-src'), document.baseURI).href;
-  var TITLE = tag.getAttribute('data-title') || 'Ambient';
-  var K_ON  = 'ambient:on';      // "1" / "0"
-  var K_IN  = 'ambient:entered'; // session only: has a project been opened yet
   var START_AT = 0;              // seconds -- where the track opens
-
-  function get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
-  function set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
-  function sget(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
-  function sset(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
-
-  /* The lobby opens in silence. Music is armed by walking into a project, and
-     from then on it follows you anywhere -- including back to the lobby -- for
-     the rest of the session. */
-  function isProject(path){
-    var p = String(path).replace(/index\.html$/, '');
-    return p !== '/' && p !== '';
-  }
-  function entered(){ return sget(K_IN) === '1'; }
-  function wanted(){ return entered() && get(K_ON) !== '0'; }
-
-  /* Returns true the first time a project is opened, so the caller knows to
-     drop the needle at the top of the track. `path` lets the click that STARTS
-     a transition arm the music, rather than the arrival that ends it. */
-  function enter(path){
-    if (!isProject(path || location.pathname) || entered()) return false;
-    sset(K_IN, '1');
-    return true;
-  }
 
   /* ---------------------------------------------------------------- player */
 
   var audio = new Audio(SRC);
   audio.loop = true;
-  audio.preload = 'auto';
+  audio.preload = 'none';        // nothing to fetch until someone asks for it
   audio.volume = 0.45;
 
-  /* Always open at START_AT. Moving between pages does not reload the
-     document -- render() swaps the body in place -- so this audio element
-     survives internal navigation and keeps playing without needing to
-     remember a position. Only a genuine load lands here, and a genuine load
-     should start at the top. */
   audio.addEventListener('loadedmetadata', function(){
     var pos = START_AT;
     if (audio.duration && pos >= audio.duration) pos = 0;
     try { audio.currentTime = pos; } catch(e){}
   });
 
-  var armed = false;
-  // click / pointerdown / keydown / touchend grant user activation; scroll and
-  // mousemove do not, but they are cheap to listen for and cost nothing if the
-  // retry fails, because onGesture re-arms on rejection.
-  var GESTURES = ['pointerdown','pointerup','click','keydown','touchstart','touchend','wheel','scroll'];
-
-  function audible(){ return !audio.paused && !audio.muted; }
-
-  function start(){
-    audio.muted = false;
-    return audio.play().catch(function(){
-      // Audible autoplay refused. Run silently so the track is already in
-      // position, and wait for the gesture that lets us turn it up.
-      audio.muted = true;
-      audio.play().catch(function(){});
-      arm();
-    });
-  }
-  function arm(){
-    if (armed) return;
-    armed = true;
-    if (btn) paint();   // btn does not exist on the first arm()
-    GESTURES.forEach(function(ev){
-      window.addEventListener(ev, onGesture, {once:true, passive:true});
-    });
-  }
-  function disarm(){
-    if (!armed) return;
-    armed = false;
-    if (btn) paint();   // btn does not exist on the first arm()
-    GESTURES.forEach(function(ev){ window.removeEventListener(ev, onGesture); });
-  }
-  function onGesture(){
-    disarm();
-    if (!wanted()) return;
-    audio.muted = false;
-    audio.play().catch(function(){
-      // That event fired but did not count as activation (a scroll or a wheel).
-      // Drop back to silent playback and keep waiting for a real one.
-      audio.muted = true;
-      audio.play().catch(function(){});
-      arm();
-    });
-  }
-
-  /* Called on load and after every in-place navigation. */
-  function consider(path){
-    var target = path || location.pathname;
-    if (isProject(target)) {
-      // Only the FIRST entry drops the needle back to the top; later ones
-      // pick the track up wherever it is.
-      if (enter(target)) { try { audio.currentTime = START_AT; } catch(e){} }
-      // Heading into a project always means sound, even if it was muted
-      // earlier or the session was already armed and has since gone quiet.
-      if (!audible()) { set(K_ON, '1'); disarm(); start(); }
-    }
-    if (typeof btn !== 'undefined' && btn) paint();
-  }
-
-  // Try the moment the script runs, before the page has even finished parsing.
-  consider();
-  if (wanted()) start();
-
-
-  /* --------------------------------------------------------------- control */
-
-  var css = document.createElement('style');
-  css.setAttribute('data-ambient','');   // survives the page-swap head cleanup
-  css.textContent = [
-    '.ambient{position:fixed;right:22px;bottom:20px;z-index:50;display:flex;',
-    '  align-items:center;gap:10px;padding:9px 15px;cursor:pointer;',
-    '  background:rgba(9,17,42,.62);border:1px solid rgba(120,160,220,.22);',
-    '  border-radius:2px;backdrop-filter:blur(4px);color:#fff;',
-    '  font-family:"Michroma","Futura",sans-serif;font-size:9px;letter-spacing:.22em;',
-    '  text-transform:uppercase;line-height:1;',
-    '  transition:border-color .22s ease,opacity .22s ease;opacity:.72}',
-    '.ambient:hover{opacity:1;border-color:rgba(255,255,255,.45)}',
-    '.ambient .eq{display:flex;align-items:flex-end;gap:2px;height:11px;width:13px}',
-    '.ambient .eq i{width:2px;background:#fff;height:3px;transform-origin:bottom}',
-    '.ambient.on .eq i{animation:ambient-eq .9s ease-in-out infinite}',
-    '.ambient.on .eq i:nth-child(2){animation-delay:.18s}',
-    '.ambient.on .eq i:nth-child(3){animation-delay:.36s}',
-    '.ambient.on .eq i:nth-child(4){animation-delay:.09s}',
-    '.ambient.off .eq i{height:3px;opacity:.5}',
-    '.ambient.pending{opacity:1;border-color:rgba(255,255,255,.55)}',
-    '.ambient.pending .eq i{animation:ambient-wait 1.6s ease-in-out infinite}',
-    '.ambient.pending .eq i:nth-child(2){animation-delay:.12s}',
-    '.ambient.pending .eq i:nth-child(3){animation-delay:.24s}',
-    '.ambient.pending .eq i:nth-child(4){animation-delay:.36s}',
-    '@keyframes ambient-wait{0%,100%{opacity:.35}50%{opacity:1}}',
-    '@keyframes ambient-eq{0%,100%{height:3px}50%{height:11px}}',
-    '@media(prefers-reduced-motion:reduce){.ambient.on .eq i{animation:none;height:7px}}',
-    '@media(max-width:640px){.ambient{right:14px;bottom:14px;padding:8px 12px;font-size:8px}}'
-  ].join('');
-  document.head.appendChild(css);
-
-  var btn = document.createElement('button');
-  btn.className = 'ambient off';
-  btn.type = 'button';
-  btn.title = TITLE;
-  btn.innerHTML = '<span class="eq"><i></i><i></i><i></i><i></i></span><span class="lbl"></span>';
-  var lbl = btn.querySelector('.lbl');
-
-  function paint(){
-    var on = audible();
-    var pending = !on && armed && wanted();   // blocked by autoplay, not by choice
-    btn.classList.toggle('on', on);
-    btn.classList.toggle('off', !on);
-    btn.classList.toggle('pending', pending);
-    lbl.textContent = on ? 'Sound On' : (pending ? 'Play Sound' : 'Sound Off');
-    btn.setAttribute('aria-label', (on ? 'Mute' : 'Play') + ' background music: ' + TITLE);
-    btn.setAttribute('aria-pressed', String(on));
-  }
-  paint();
-  ['play','pause','volumechange'].forEach(function(ev){ audio.addEventListener(ev, paint); });
-
-  btn.addEventListener('click', function(e){
-    e.stopPropagation();
-    if (audible()) { audio.pause(); set(K_ON,'0'); }
-    else {
-      /* Asking for sound by hand counts as entering: it arms the session the
-         same way walking into a project does, and starts at the top. */
-      if (!entered()) {
-        sset(K_IN, '1');
-        try { audio.currentTime = START_AT; } catch(e2){}
-      }
-      set(K_ON,'1'); disarm(); start();
-    }
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'm' && e.key !== 'M') return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    var t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (audio.paused) audio.play().catch(function(){});
+    else audio.pause();
   });
 
   /* ----------------------------------------------------------------- fade */
@@ -260,7 +105,6 @@
 
     document.body.innerHTML = doc.body.innerHTML;
     document.body.className = doc.body.className;
-    document.body.appendChild(btn);
 
     // innerHTML leaves scripts inert; swap each for an executable copy in place.
     Array.prototype.forEach.call(document.body.querySelectorAll('script'), function(s){
@@ -275,8 +119,6 @@
     var target = url.hash && document.querySelector(url.hash);
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-
-    consider();   // walking into a project is what starts the music
   }
 
   /* Fade out and fetch at the same time, so the wait costs no extra time: by
@@ -299,19 +141,8 @@
   window.__ambientNav = function(href){
     var u; try { u = new URL(href, document.baseURI); } catch(e){ location.href = href; return; }
     if (u.origin !== location.origin) { location.href = u.href; return; }
-    consider(u.pathname);
     go(u, true);
   };
-
-  /* Capture phase, so this runs BEFORE any page handler that swallows the
-     click to play a transition of its own. Starting the track inside the
-     gesture is also what keeps it clear of the autoplay policy. */
-  document.addEventListener('click', function(e){
-    if (e.button !== 0) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    var url = internal(e.target.closest && e.target.closest('a[href]'));
-    if (url) consider(url.pathname);
-  }, true);
 
   document.addEventListener('click', function(e){
     if (e.defaultPrevented || e.button !== 0) return;
@@ -325,8 +156,4 @@
   window.addEventListener('popstate', function(){
     go(new URL(location.href), false);
   });
-
-  function mount(){ document.body.appendChild(btn); paint(); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-  else mount();
 })();

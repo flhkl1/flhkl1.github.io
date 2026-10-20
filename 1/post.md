@@ -2,6 +2,8 @@
 title: Colorizing the Prokudin-Gorskii Collection
 subtitle: CS 180 Project 1
 date: September 2026
+cover: assets/background.jpg
+effect: rgb
 ---
 <!-- This file is the whole page. Cheat sheet: ../README-posts.md -->
 ## The problem

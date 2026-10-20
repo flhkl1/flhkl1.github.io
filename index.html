@@ -449,9 +449,10 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
 </script>
 
 <script>
-/* Clicking the avatar plays transition.mp4 (living room -> out through the
-   doors -> the statue) and lands on Project 0, whose background is the frame
-   the shot ends on. Three things have to be true for that cut to be invisible:
+/* Clicking a hotspot plays its shot (the doorway: living room -> out through
+   the doors -> the statue; the bird picture: a push into the print; the
+   cabinet: through its mirror into the orchard) and lands
+   on that project, whose cover is the frame the shot ends on. Three things have to be true for that cut to be invisible:
 
    1. NO VEIL. Nothing fades to black. The video's final frame stays on screen
       until the destination is genuinely ready to be seen.
@@ -464,15 +465,21 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
       image up, start the page swap slightly BEFORE the video ends, and only
       lift the overlay once the image has decoded and a frame has been painted. */
 (function(){
-  var HREF    = './0/index.html';
-  var DEST_BG = './0/assets/background.jpg';
+  /* One entry per hotspot that has a shot. Each plays its own video and lands
+     on a page whose cover is the frame that shot ends on. A hotspot without an
+     entry stays a plain link. */
+  var SHOTS = [
+    { hot:'avatar',  href:'./0/index.html', bg:'./0/assets/background.jpg', video:'assets/transition.mp4' },
+    { hot:'picture', href:'./1/index.html', bg:'./1/assets/background.jpg', video:'assets/transition-1.mp4' },
+    { hot:'cabinet', href:'./2/index.html', bg:'./2/assets/background.jpg', video:'assets/transition-2.mp4' },
+    { hot:'table',   href:'./3/index.html', bg:'./3/assets/background.jpg', video:'assets/transition-3.mp4' }
+  ];
   var LEAD    = 0.9;    // seconds before the end to start swapping underneath
   var FADE    = 260;    // ms to lift the last frame once the page is ready
 
-  var hot   = document.getElementById('avatar');
   var wrap  = document.getElementById('transition');
-  var video = document.getElementById('transition-video');
-  if(!hot || !wrap || !video) return;
+  var first = document.getElementById('transition-video');
+  if(!wrap || !first) return;
 
   var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
@@ -483,7 +490,6 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   css(wrap, {position:'fixed', top:'0', left:'0', width:'100%', height:'100%',
              zIndex:'2147483647', background:'#000', opacity:'0',
              visibility:'hidden', pointerEvents:'none', transition:'none'});
-  css(video, {width:'100%', height:'100%', objectFit:'cover', display:'block'});
 
   var skip = document.createElement('div');
   // Bottom-aligned, so the keycap's legend and the label share a baseline.
@@ -516,26 +522,22 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
   skip.appendChild(label);
   wrap.appendChild(skip);
 
-  // Warm the destination background as soon as the cursor arrives, so it is
-  // decoded long before the shot ends.
-  var bg = new Image();
-  function warm(){ if(!bg.src) bg.src = DEST_BG; }
-  hot.addEventListener('pointerenter', warm);
-  hot.addEventListener('focus', warm);
-
-  var swapped = false, revealed = false;
+  // The shot that is playing: its destination, its warmed background, and
+  // how far the hand-over has got.
+  var active = null;
 
   function swap(){
-    if(swapped) return;
-    swapped = true;
-    if (typeof window.__ambientNav === 'function') window.__ambientNav(HREF);
-    else { location.href = HREF; }          // hard load: overlay goes with it
+    if(!active || active.swapped) return;
+    active.swapped = true;
+    if (typeof window.__ambientNav === 'function') window.__ambientNav(active.href);
+    else { location.href = active.href; }   // hard load: overlay goes with it
   }
 
   function reveal(){
-    if(revealed) return;
-    revealed = true;
+    if(!active || active.revealed) return;
+    active.revealed = true;
     swap();
+    var bg = active.bg;
     var lift = function(){
       var fired = false;
       var run = function(){
@@ -558,33 +560,66 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
     else { bg.onload = lift; bg.onerror = lift; setTimeout(lift, 1500); }
   }
 
-  hot.addEventListener('click', function(e){
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    if (reduce) return;                     // plain link handles it
-    e.preventDefault();
-    e.stopPropagation();                    // don't let ambient.js navigate early
-    warm();
+  SHOTS.forEach(function(shot){
+    var hot = document.getElementById(shot.hot);
+    if(!hot) return;
 
-    css(wrap, {transition:'none', opacity:'1', visibility:'visible',
-               pointerEvents:'auto', cursor:'pointer'});
-    skip.style.opacity = '1';
+    // The doorway's video is already in the markup; the others are made here
+    // and only start downloading in earnest once the cursor arrives.
+    var video = first;
+    if (first.getAttribute('src') !== shot.video) {
+      video = document.createElement('video');
+      video.muted = true;
+      video.setAttribute('playsinline', '');
+      video.preload = 'metadata';
+      video.src = shot.video;
+      wrap.insertBefore(video, skip);
+    }
+    css(video, {width:'100%', height:'100%', objectFit:'cover', display:'none'});
 
-    var playing = video.play();
-    if (playing && playing.catch) playing.catch(function(){ reveal(); });
+    // Warm the destination background as soon as the cursor arrives, so it is
+    // decoded long before the shot ends.
+    var bg = new Image();
+    function warm(){
+      if(!bg.src) bg.src = shot.bg;
+      video.preload = 'auto';
+    }
+    hot.addEventListener('pointerenter', warm);
+    hot.addEventListener('focus', warm);
 
-    // Drive everything off timeupdate. A video that has reached its last frame
-    // does not reliably fire 'ended' -- it can simply sit there with
-    // ended === false and paused === false -- so the end is detected from the
-    // clock instead, and 'ended' is kept only as an extra trigger.
-    video.addEventListener('timeupdate', function(){
-      if (!video.duration) return;
-      var left = video.duration - video.currentTime;
-      if (left <= LEAD) swap();             // render Project 0 underneath
-      if (left <= 0.06) reveal();           // last frame is up: hand over
+    hot.addEventListener('click', function(e){
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      if (reduce) return;                   // plain link handles it
+      e.preventDefault();
+      e.stopPropagation();                  // don't let ambient.js navigate early
+      if (active) return;                   // one shot at a time
+      warm();
+      active = { href:shot.href, bg:bg, swapped:false, revealed:false };
+
+      Array.prototype.forEach.call(wrap.querySelectorAll('video'),
+        function(v){ v.style.display = 'none'; });
+      video.style.display = 'block';
+      css(wrap, {transition:'none', opacity:'1', visibility:'visible',
+                 pointerEvents:'auto', cursor:'pointer'});
+      skip.style.opacity = '1';
+
+      var playing = video.play();
+      if (playing && playing.catch) playing.catch(function(){ reveal(); });
+
+      // Drive everything off timeupdate. A video that has reached its last frame
+      // does not reliably fire 'ended' -- it can simply sit there with
+      // ended === false and paused === false -- so the end is detected from the
+      // clock instead, and 'ended' is kept only as an extra trigger.
+      video.addEventListener('timeupdate', function(){
+        if (!video.duration) return;
+        var left = video.duration - video.currentTime;
+        if (left <= LEAD) swap();           // render the project underneath
+        if (left <= 0.06) reveal();         // last frame is up: hand over
+      });
+      video.addEventListener('ended', reveal, {once:true});
+      // Backstop, in case timeupdate stops arriving too.
+      setTimeout(reveal, (video.duration ? video.duration * 1000 : 5100) + 1500);
     });
-    video.addEventListener('ended', reveal, {once:true});
-    // Backstop, in case timeupdate stops arriving too.
-    setTimeout(reveal, (video.duration ? video.duration * 1000 : 5100) + 1500);
   });
 
   wrap.addEventListener('click', reveal);
@@ -594,7 +629,7 @@ footer{text-align:center;font-family:var(--display);font-size:9.5px;
 })();
 </script>
 
-<script src="assets/ambient.js"
+<script src="assets/ambient.js?v=2"
         data-src="assets/audio/call-it-what-you-like.mp3"
         data-title="Call It What You Like"></script>
 </body>

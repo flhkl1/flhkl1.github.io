@@ -138,6 +138,21 @@ h1.flow canvas{position:absolute;image-rendering:pixelated;pointer-events:none;t
 h1.flow .txt{transition:opacity .5s ease}
 h1.flowing .txt{opacity:0}
 
+/* ---------- rgb plates (project 1) ---------- */
+.rgb-cover{position:relative;overflow:hidden;background:#000;isolation:isolate;cursor:crosshair}
+.rgb-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  mix-blend-mode:screen;pointer-events:none;user-select:none;-webkit-user-select:none}
+.rgb-cover img.plain{display:none}
+.rgb-cover .ro{position:absolute;left:16px;bottom:12px;z-index:1;pointer-events:none;
+  font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;white-space:pre;
+  color:rgba(255,255,255,.9);background:rgba(0,0,0,.4);padding:5px 8px;border-radius:3px}
+h1.rgb{position:relative;width:fit-content;isolation:isolate}
+h1.rgb .txt{color:#ff0;mix-blend-mode:multiply}
+h1.rgb::before,h1.rgb::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;
+  mix-blend-mode:multiply;pointer-events:none}
+h1.rgb::before{color:#f0f;transform:translate(var(--gx,0),var(--gy,0))}
+h1.rgb::after{color:#0ff;transform:translate(var(--rx,0),var(--ry,0))}
+
 /* ---------- footer, lightbox ---------- */
 .post-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);font-size:.9rem}
 #lightbox{position:fixed;inset:0;z-index:100;background:rgba(255,255,255,.96);display:flex;
@@ -157,6 +172,11 @@ h1.flowing .txt{opacity:0}
   .post-body details > *{display:block}
   .cmp .top,.cmp .handle,.cmp input,.cmp .tag{display:none}
   h1.flow canvas{display:none}h1.flowing .txt{opacity:1}
+  .rgb-cover{background:none}
+  .rgb-cover img{display:none !important}
+  .rgb-cover img.plain{display:block !important;position:static;mix-blend-mode:normal}
+  .rgb-cover .ro,h1.rgb::before,h1.rgb::after{display:none}
+  h1.rgb .txt{color:inherit;mix-blend-mode:normal}
 }
 
 /* stills that stand in for GIFs on paper */

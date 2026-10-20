@@ -2,6 +2,7 @@
 title: Fun with Filters and Frequencies
 subtitle: CS 180 Project 2
 date: September 2026
+cover: assets/background.jpg
 ---
 
 <!-- This file is the whole page. Cheat sheet: ../README-posts.md -->
